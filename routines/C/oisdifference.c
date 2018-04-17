@@ -154,9 +154,7 @@ int main (int argc, char* argv[])
 
     char listn[1][30];
     
-    char sname[30];
-    sprintf(sname, "./img.txt");
-    fp = fopen(sname,"r");
+    fp = fopen("./img.txt", "r");
         
     for (int i = 0; i < 1; i++){
         fscanf(fp, "%s\n", listn[i]);} // read in file names only //
