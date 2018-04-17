@@ -15,16 +15,16 @@
 // Start the program to output a float //
 int main (void)
 {
-    // Set up the integer index variables to be used (common ones) for loops //
-    int i, j, k, t;
+    // Start the clock
     clock_t begin = clock();
+    int t;
     // You need to input how many files you will difference and how many references you will be using //
     int nstars, fwhm, w, d;
     FILE *fp;
     
     //parameters set by the user//
     fp = fopen("./parms.txt", "r");
-    for (i = 0; i < 1; i++){
+    for (int i = 0; i < 1; i++){
         fscanf(fp, "%i %i %i %i", &fwhm, &w, &d, &nstars);} // read in the star list //
     
     // Now we will read in text files with the names of the files //
@@ -37,12 +37,12 @@ int main (void)
     
     fr = fopen("./ref.txt", "r");
    
-    for (i = 0; i < 1; i++){
+    for (int i = 0; i < 1; i++){
         fscanf(fr, "%s\n", listr[i]);} // read in the list of references //
     
     fs = fopen("./refstars.txt", "r");
     
-    for (i = 0; i < nstars; i++){
+    for (int i = 0; i < nstars; i++){
         xc[i] = 0;
         yc[i] = 0;
         fscanf(fs, "%i %i", &xc[i], &yc[i]);} // read in the star list //
@@ -70,18 +70,18 @@ int main (void)
     Ref = (double*) malloc(N*sizeof(double));
     pixr = (float*) malloc(N*sizeof(float));
     
-    for (i = 0; i < N; i++){
+    for (int i = 0; i < N; i++){
         Ref[i] = 0.0;} // initialize the reference matrix //
     
     fits_get_img_dim(fptr, &naxis, &status);
     
     fpixr[0] = 1.0;fpixr[1]=1.0;
-    j = 0;
+    int j = 0;
     
     // read in the pixel values //
     for (fpixr[1] = 1; fpixr[1] <= naxes; fpixr[1]++){
         fits_read_pix(fptr, TFLOAT, fpixr, naxes, 0, pixr, 0, &status);
-        for (i = 0; i < naxes; i++){
+        for (int i = 0; i < naxes; i++){
             Ref[i+j*naxes] = (double) pixr[i];}
         j++;}
     fits_close_file(fptr, &status); free(pixr);
@@ -91,7 +91,7 @@ int main (void)
     sprintf(sname, "./img.txt");
     fl = fopen(sname,"r");
         
-    for (i = 0; i < 1; i++){
+    for (int i = 0; i < 1; i++){
         fscanf(fl, "%s\n", listn[i]);} // read in file names only //
     
     // now we can read in each file to difference against the reference frame //
@@ -104,7 +104,7 @@ int main (void)
     Sci = (double*) malloc(N*sizeof(double));
     pixs = (float*) malloc(N*sizeof(float));
     
-    for (i = 0; i < N; i++){
+    for (int i = 0; i < N; i++){
         Sci[i] = 0.0;}
     status = 0;
     
@@ -119,7 +119,7 @@ int main (void)
     // read in the pixel values //
     for (fpixs[1] = 1.0; fpixs[1] <= naxes; fpixs[1]++){
         fits_read_pix(fpts, TFLOAT, fpixs, naxes, 0, pixs, 0, &status);
-        for (i = 0; i < naxes; i++){
+        for (int i = 0; i < naxes; i++){
             Sci[i+j*naxes] = (double)pixs[i];
             //printf("%f\n", Sci[i+j*naxes]);
         }
@@ -157,7 +157,7 @@ int main (void)
     Kn = (double*) malloc(sizeof(double)*nk);
     Kq = (double*) malloc(sizeof(double)*nk);
     
-    for (i = 0; i< Qtwo; i++){
+    for (int i = 0; i< Qtwo; i++){
         C[i] = 0;}
     
     // now we need to solve for the kernel paramters //
@@ -166,7 +166,7 @@ int main (void)
     for (q=0; q<nk; q++){
         
         //make the q kernel//
-        for (i=0;i<nk;i++){
+        for (int i=0;i<nk;i++){
             Kq[i]=0;}
         Kq[q]=1.0;
         if (q !=cent){
@@ -179,7 +179,7 @@ int main (void)
                 for (n = 0; n < nk;n++){
                     
                     //make the n kernel//
-                    for (i=0; i < nk;i++){
+                    for (int i=0; i < nk;i++){
                         Kn[i]=0;}
                     Kn[n]=1.0;
                     if (n !=cent){
@@ -190,13 +190,13 @@ int main (void)
                         for (l = 0; l <= d-m; l++){
                             D[qrs]=0;//ensure D is only calculated once for each Q//
                             
-                            for (k = 0; k < P; k++){
+                            for (int k = 0; k < P; k++){
                                 
                                 xcent = xc[k];//x coordinate of stamp center//
                                 ycent = yc[k];//y coordinate of stamp center//
                                 
                                 //make the star stamps//
-                                for (i=0;i<stax;i++){
+                                for (int i=0;i<stax;i++){
                                     for(j=0;j<stax;j++){
                                         Rs[i+j*stax] = Ref[(i+xcent-fwhm)+(j+ycent-fwhm)*naxes];
                                         Ss[i+j*stax] = Sci[(i+xcent-fwhm)+(j+ycent-fwhm)*naxes];
@@ -205,12 +205,12 @@ int main (void)
                                 }//end of j loop//
                                
                                 //reinitialize the convolution matrix//
-                                for (i = 0; i < S; i++){
+                                for (int i = 0; i < S; i++){
                                     CRKn[i]=0;CRKq[i]=0;}
                                 
                                 //now we do the convolution for n and q//
-                                for (i=0; i<stax;i++){
-                                    for(j=0;j<stax;j++){
+                                for (int i=0; i<stax;i++){
+                                    for(int j=0;j<stax;j++){
                                         for (mm=0;mm<L;mm++){
                                             for(nn=0;nn<L;nn++){
                                                 ii=i+(mm-w);//index of convolution//
@@ -227,13 +227,13 @@ int main (void)
                                 mr = m+r; ls = l+s;//exponents for polynomial approximation//
                                 
                                 //now we need to fill in C//
-                                for (i=0;i<S;i++){
+                                for (int i=0;i<S;i++){
                                     C[n*deg+ml+qrs*Q]=C[n*deg+ml+qrs*Q]+pow(xcent,mr)*pow(ycent,ls)*CRKn[i]*CRKq[i];
                                     //printf("C is %f\n", C[]);
                                 }//end of C loop//
                                 
                                 //now we need to fill in D//
-                                for (i = 0; i < S;i++){
+                                for (int i = 0; i < S;i++){
                                     D[qrs]=D[qrs]+pow(xcent,r)*pow(ycent,s)*Ss[i]*CRKq[i];
                                     //printf("D is %f\n", D[qrs]);
                                 }//end of D loop//
@@ -267,12 +267,12 @@ int main (void)
     
    // Now we need to do the LU decomposition
    
-    for (i = 0; i < Qtwo; i++){
+    for (int i = 0; i < Qtwo; i++){
         Low[i] = 0.0; U[i] = 0.0;}
         
-    for (k = 0; k < Q; k++){
+    for (int k = 0; k < Q; k++){
         Low[k+k*Q] = 1.0;
-        for (i = k + 1; i < Q; i++){
+        for (int i = k + 1; i < Q; i++){
             Low[k+i*Q] = C[k+i*Q]/C[k+k*Q];
             for (j = k + 1; j < Q; j++){
                 C[j+i*Q] = C[j+i*Q] - Low[k+i*Q]*C[j+k*Q];
@@ -283,18 +283,13 @@ int main (void)
             U[j+k*Q] = C[k+j*Q];
         }
     }
-    //for(i=0;i< Qtwo;i++){
-     //   printf("%f\n",C[i]);}
-    
-    //for(i=0;i<Qtwo;i++){
-      //   printf("%f\n", Low[i]);}
         
     // Now we will do Gaussian elimination
     // Solve for yc
     ratio = 0; temp = 0;
-    for(i=0; i<Q;i++){
+    for(int i=0; i<Q;i++){
         ycs[i]=0;xcs[i]=0;}
-    for (i = 0; i < (Q-1); i++){
+    for (int i = 0; i < (Q-1); i++){
         for (j = (i+1); j<Q; j++){
             ratio = Low[j+i*Q] / Low[i+i*Q];
             for (count = i; count < Q; count++){
@@ -303,7 +298,7 @@ int main (void)
 
     ycs[Q-1] = D[Q-1] / Low[(Q-1)+Q*(Q-1)]; 
 
-    for (i = (Q-2); i >= 0; i--){
+    for (int i = (Q-2); i >= 0; i--){
         temp = D[i]; 
         for (j = (i+1); j < Q; j++){
             temp -= (Low[j+i*Q]*ycs[j]);}
@@ -311,7 +306,7 @@ int main (void)
 
         
     //Solve for xc
-    for (i = 0; i < (Q-1); i++){
+    for (int i = 0; i < (Q-1); i++){
         for (j = (i+1); j<Q; j++){
             ratio = U[j+i*Q] / U[i+i*Q];
             for (count = i; count < Q; count++){
@@ -320,13 +315,13 @@ int main (void)
     
     xcs[Q-1] = ycs[Q-1] / U[(Q-1)+Q*(Q-1)]; 
     
-    for (i = (Q-2); i >= 0; i--){
+    for (int i = (Q-2); i >= 0; i--){
         temp = ycs[i];
         for (j = (i+1); j < Q; j++){
             temp -= (U[j+i*Q]*xcs[j]);}
         xcs[i] = temp / U[i+i*Q];}
 
-    for (i = 0; i < Q; i++){
+    for (int i = 0; i < Q; i++){
         a[i] = 0;
         a[i] =  xcs[i];
         //printf("%f\n", a[i]);
@@ -342,15 +337,15 @@ int main (void)
     K = (double*) malloc(sizeof(double)*Q);
     
     cent = (nk-1)/2;//center index
-    for (i = 0; i < N; i++){
+    for (int i = 0; i < N; i++){
         Con[i]=0;}
-    for (i = 0; i < Q; i++){
+    for (int i = 0; i < Q; i++){
         K[i] = 0.0;}
     //do the convolution//
     ml=0;
     for (m = 0; m <= d;m++){
         for (l = 0;l <= d-m;l++){
-            for (i = 0; i < nk; i++){
+            for (int i = 0; i < nk; i++){
                 if (i != cent){
                     K[i+nk*ml] = a[deg*i+ml];
                     K[cent+nk*ml] =  K[cent+nk*ml] - a[deg*i+ml];
@@ -368,8 +363,8 @@ int main (void)
     nml=0;
     for (m = 0; m <= d;m++){
         for (l = 0;l <= d-m;l++){
-            for (j = 0;j < naxes; j++){
-                for (i = 0;i<naxes;i++){
+            for (int j = 0;j < naxes; j++){
+                for (int i = 0;i<naxes;i++){
                     for(nn=0;nn<L; nn++){
                         for(mm=0;mm<L;mm++){
                             ii=i+(mm-w);
@@ -394,7 +389,7 @@ int main (void)
     
     Diff = (double*) malloc(sizeof(double)*N);
     
-    for (i = 0; i < N; i++){
+    for (int i = 0; i < N; i++){
         Diff[i] = 0;
         Diff[i] = Sci[i]-Con[i]; // the difference //
     }
@@ -414,9 +409,9 @@ int main (void)
     
     array = malloc(naxes*sizeof(double*));
     
-    for (i = 0; i< naxes; i++){
+    for (int i = 0; i< naxes; i++){
         array[i] = (double*) malloc(sizeof(double)*N);}
-    for (i = 1; i < naxes; i++){
+    for (int i = 1; i < naxes; i++){
         array[i] = array[i-1]+naxes;}
     dfilename = "dimg.fits";
     
@@ -427,8 +422,8 @@ int main (void)
     fits_create_file(&fptd, dfilename, &status);
     fits_create_img(fptd, bpix, naxis, nax, &status);
     
-    for ( j = 0; j < naxes; j++){
-        for(i = 0; i < naxes; i++){
+    for (int j = 0; j < naxes; j++){
+        for(int i = 0; i < naxes; i++){
             array[j][i] = Diff[i+j*naxes];}}
     
     fpixel = 1;
@@ -458,7 +453,7 @@ int main (void)
     fits_get_hdrspace(infptr, &nkeys1, NULL, &status);
     
     
-    for (i = 11; i < nkeys1; i++){
+    for (int i = 11; i < nkeys1; i++){
         fits_read_record(infptr, i, card, &status);
         //printf("%s\n", card);
         fits_write_record(fptd, card, &status);}
