@@ -24,6 +24,7 @@ typedef struct {
 } image;
 
 image fits_get_data(char* filename);
+int fits_write(int naxes, double* Diff, char* file_with_header);
 void make_matrix_system(image ref, image sci, int w, int fwhm, int d, int nstars, int* xc, int* yc, double* C, double* D);
 void solve_system(int n, double* C, double* D, double* xcs);
 void var_convolve(int w, int d, int Q, double* a, int naxes, double* Ref, double* Con);
@@ -182,46 +183,14 @@ int main (int argc, char* argv[])
     }
     free(Sci); free(Con);
     
-    // Now we need to make a fits file for the differenced image //
-    fitsfile *fpt;
-    long nax[2] = {naxes, naxes};
-    int naxis = 2;
-    int status = 0;
-    remove("dimg.fits");
-    fits_create_file(&fpt, "dimg.fits", &status);
-    fits_create_img(fpt, DOUBLE_IMG, naxis, nax, &status);
+    int success = fits_write(naxes, Diff, scifile);
+    if (success == EXIT_FAILURE) {
+        printf("Problem writing diff FITS file.\n");
+        return EXIT_FAILURE;
+    }
 
-    // I need an auxiliary array to transpose the array to save
-    double *array = malloc(N * sizeof(double));
-    // Need to transpose the array to save it
-    for (int j = 0; j < naxes; j++){
-        for(int i = 0; i < naxes; i++){
-            array[j + i * naxes] = Diff[i + j * naxes];
-        }
-    }
-    long fpixel = 1;
-    fits_write_img(fpt, TDOUBLE, fpixel, N, array, &status);
-    
     //free everything//
-    free(Diff); free(array);
-    
-    // Set the Header on the new image
-    fitsfile *fphead;      /* pointer to the FITS file, defined in fitsio.h */
-    
-    char card[FLEN_CARD];
-    int nkeys;
-    status = 0;
-    fits_open_file(&fphead, scifile, READWRITE, &status);
-    fits_get_hdrspace(fphead, &nkeys, NULL, &status);
-    // Copy the header over from card #11
-    for (int i = 11; i < nkeys; i++){
-        fits_read_record(fphead, i, card, &status);
-        fits_write_record(fpt, card, &status);
-    }
-    
-    // close everything //
-    fits_close_file(fphead, &status) ;
-    fits_close_file(fpt, &status);
+    free(Diff);
     
     clock_t end = clock();
     printf("The difference took %f seconds\n", (double) (end-begin)/CLOCKS_PER_SEC);
@@ -245,6 +214,50 @@ image fits_get_data(char* filename) {
     fits_close_file(fp, &status);
     image img = {data, (int)naxes[0], (int)naxes[1]};
     return img;
+}
+
+int fits_write(int naxes, double* Diff, char* file_with_header) {
+    // Now we need to make a fits file for the differenced image //
+    fitsfile *fpt;
+    long nax[2] = {naxes, naxes};
+    int naxis = 2;
+    int status = 0;
+    remove("dimg.fits");
+    fits_create_file(&fpt, "dimg.fits", &status);
+    fits_create_img(fpt, DOUBLE_IMG, naxis, nax, &status);
+    
+    // I need an auxiliary array to transpose the array to save
+    int N = naxes * naxes;
+    double *array = malloc(N * sizeof(double));
+    // Need to transpose the array to save it
+    for (int j = 0; j < naxes; j++){
+        for(int i = 0; i < naxes; i++){
+            array[j + i * naxes] = Diff[i + j * naxes];
+        }
+    }
+    long fpixel = 1;
+    fits_write_img(fpt, TDOUBLE, fpixel, N, array, &status);
+    free(array);
+    
+    // Set the Header on the new image
+    fitsfile *fphead;      /* pointer to the FITS file, defined in fitsio.h */
+    
+    char card[FLEN_CARD];
+    int nkeys;
+    status = 0;
+    fits_open_file(&fphead, file_with_header, READWRITE, &status);
+    fits_get_hdrspace(fphead, &nkeys, NULL, &status);
+    // Copy the header over from card #11
+    for (int i = 11; i < nkeys; i++){
+        fits_read_record(fphead, i, card, &status);
+        fits_write_record(fpt, card, &status);
+    }
+    
+    // close everything //
+    fits_close_file(fphead, &status) ;
+    fits_close_file(fpt, &status);
+    
+    return EXIT_SUCCESS;
 }
 
 void make_matrix_system(image ref, image sci, int w, int fwhm, int d, int nstars, int* xc, int* yc, double* C, double* D) {
