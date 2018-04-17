@@ -154,12 +154,6 @@ int main (int argc, char* argv[])
 
     char listn[1][30];
     
-    fp = fopen("./img.txt", "r");
-        
-    for (int i = 0; i < 1; i++){
-        fscanf(fp, "%s\n", listn[i]);} // read in file names only //
-    fclose(fp);
-    
     // now we can read in each file to difference against the reference frame //
     fitsfile *fpts;
     float *pixs;
@@ -172,8 +166,6 @@ int main (int argc, char* argv[])
     for (int i = 0; i < N; i++){
         Sci[i] = 0.0;}
     status = 0;
-    
-    scifile = listn[0];
     
     fits_open_file(&fpts, scifile, READONLY, &status);
     fits_get_img_dim(fpts, &naxis, &status);
