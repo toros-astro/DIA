@@ -15,6 +15,7 @@
 char version_number[] = "1.0.1";
 
 void usage(char* exec_name);
+void version(char* exec_name);
 
 // Start the program to output a float //
 int main (int argc, char* argv[])
@@ -83,7 +84,7 @@ int main (int argc, char* argv[])
                 return EXIT_SUCCESS;
             }
             else if ( !strcmp(*argv, "--version") ) {
-                printf("Version %s", version_number);
+                version(exec_name);
                 return EXIT_SUCCESS;
             }
             else {
@@ -556,17 +557,24 @@ void usage(char *exec_name) {
     printf("%s\nAuthor: Ryan Oelkers (c)\n", exec_basename);
     printf("------------------------\n\n");
     printf("usage: %s -fwhm <int> -w <int> -d <int> \
-           -ref <filename> -sci <filename> [-refstars <filename>] [-h, --help]\n\n", exec_basename);
+-ref <filename> -sci <filename> [-refstars <filename>] [-h, --help] [--version]\n\n", exec_basename);
     printf("Arguments:\n");
-    printf("\tfwhm: The approximate full-width at half-maximum of the stars PSF in pixels (integer).\n");
-    printf("\tw: the half-width of the kernel to calculate the optimal difference.\n");
-    printf("\td: Degree of the interpolating polynomial for the variable kernel.\n");
-    printf("\tref: The reference image path.\n");
-    printf("\tsci: The science image path.\n");
-    printf("\trefstars [optional]: The path to the file with the x, y values \
-           of the reference stars to estimate the convolution kernel.\n");
+    printf("\t-fwhm: The approximate full-width at half-maximum of the stars PSF in pixels (integer).\n");
+    printf("\t-w: the half-width of the kernel to calculate the optimal difference.\n");
+    printf("\t-d: Degree of the interpolating polynomial for the variable kernel.\n");
+    printf("\t-ref: The reference image path.\n");
+    printf("\t-sci: The science image path.\n");
+    printf("\t-refstars [optional]: The path to the file with the x, y values \
+of the reference stars to estimate the convolution kernel.\n");
     printf("\t\tDefault value is \"refstars.txt\".\n");
     printf("\t-h, --help: Print this help and exit.\n");
+    printf("\t--version: Print version information and exit.\n");
     printf("\n");
 }
 
+
+void version(char *exec_name) {
+    char *exec_basename = strrchr(exec_name, '/') + 1;
+    if (exec_basename == NULL) exec_basename = exec_name;
+    printf("%s %s\n", exec_basename, version_number);
+}
