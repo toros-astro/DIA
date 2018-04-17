@@ -12,7 +12,7 @@
 #include "fitsio.h"
 #include <time.h>
 
-char version_number[] = "1.0.1";
+char version_number[] = "1.0.2";
 
 void usage(char* exec_name);
 void version(char* exec_name);

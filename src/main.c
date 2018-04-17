@@ -1,33 +1,26 @@
-// This code is a version of the Optimal Image Subtraction method detailed in Alard and Lupton 1998//
-// and then reintroduced in Miller 2008. It uses a Delta Function Kernel to solve for the images offset //
-//and subtraction. It can be used for either a constant or space-varying kernel depending on how you set the code. //
-//I have tried to comment it the best I could so anyone can understand it. If you use this routine, you should cite://
-//Alard & Lupton 1998, Alard 2000, Miller+2008, Oelkers+2015, Oelkers & Stassun 2018//
+/***********************************************************************************************************************
+ *                                                                                                                     *
+ *  This code is a version of the Optimal Image Subtraction method detailed in Alard and Lupton 1998                   *
+ *  and then reintroduced in Miller 2008. It uses a Delta Function Kernel to solve for the images offset               *
+ *  and subtraction. It can be used for either a constant or space-varying kernel depending on how you set the code.   *
+ *  I have tried to comment it the best I could so anyone can understand it. If you use this routine, you should cite: *
+ *  Alard & Lupton 1998, Alard 2000, Miller+2008, Oelkers+2015, Oelkers & Stassun 2018                                 *
+ *                                                                                                                     *
+ ***********************************************************************************************************************/
 
-// Include the necessary libraries //
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
 #include "fitsio.h"
 #include <time.h>
+#include "fitshelper.h"
+#include "oisdifference.h"
 
-char version_number[] = "1.0.1";
+char version_number[] = "1.0.2";
 
 void usage(char* exec_name);
 void version(char* exec_name);
-
-typedef struct {
-    double* data;
-    int n;
-    int m;
-} image;
-
-image fits_get_data(char* filename);
-int fits_write_to(char* filename, image img, char* file_with_header);
-void make_matrix_system(image ref, image sci, int w, int fwhm, int d, int nstars, int* xc, int* yc, double* C, double* D);
-void solve_system(int n, double* C, double* D, double* xcs);
-void var_convolve(int w, int d, int Q, double* a, int naxes, double* Ref, double* Con);
 
 int main (int argc, char* argv[])
 {
