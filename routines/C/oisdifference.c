@@ -128,48 +128,33 @@ int main (int argc, char* argv[])
     for (int i = 0; i < nstars; i++) fscanf(fp, "%d %d", xc + i, yc + i);
     fclose(fp);
     
-    char listr[1][30];
-    char sname[30];
-    fitsfile *fptr;
-    int status, bitpix, naxis;
-    long naxes;// the size of the axes //
-
-    reffile = listr[0]; // the current reference file //
-    status = 0;
     
+    fitsfile *fptr;
+    int bitpix, naxis;
+    long naxes;// the size of the axes //
+    int status = 0;
     // get the image dimensions //
     fits_open_file(&fptr, reffile, READONLY, &status);
     fits_get_img_param(fptr, 2, &bitpix, &naxis, &naxes, &status);
-
-    int N; 
-    N = naxes*naxes; // size of the image //
-    
+    int N = (int)(naxes * naxes); // size of the image //
     // now we can read in the pixel values from the reference //
-    float *pixr;
-    long fpixr[2];
-    double *Ref;
-    
-    Ref = (double*) malloc(N*sizeof(double));
-    pixr = (float*) malloc(N*sizeof(float));
-    
-    for (int i = 0; i < N; i++){
-        Ref[i] = 0.0;} // initialize the reference matrix //
-    
-    fits_get_img_dim(fptr, &naxis, &status);
-    
-    fpixr[0] = 1.0;fpixr[1]=1.0;
+    long fpixr[2] = {1, 1};
+    double * Ref = (double*) calloc(N, sizeof(double));
+    float * pixr = (float*) malloc(N*sizeof(float));
     int j = 0;
-    
     // read in the pixel values //
     for (fpixr[1] = 1; fpixr[1] <= naxes; fpixr[1]++){
         fits_read_pix(fptr, TFLOAT, fpixr, naxes, 0, pixr, 0, &status);
         for (int i = 0; i < naxes; i++){
             Ref[i+j*naxes] = (double) pixr[i];}
-        j++;}
-    fits_close_file(fptr, &status); free(pixr);
+        j++;
+    }
+    fits_close_file(fptr, &status);
+    free(pixr);
 
     char listn[1][30];
-        
+    
+    char sname[30];
     sprintf(sname, "./img.txt");
     fp = fopen(sname,"r");
         
