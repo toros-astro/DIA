@@ -144,14 +144,21 @@ int main (int argc, char* argv[])
     image sciimg = fits_get_data(scifile);
     double *Sci = sciimg.data;
     int N = (int)(sciimg.n * sciimg.m); // The total number of pixels in the images.
-    int naxes = sciimg.n; // This is to fix future references to naxes
     
     // Put a guard in case images are of different shape
     if (refimg.n != sciimg.n || refimg.m != sciimg.m) {
         printf("ERROR: Reference and Science images have different dimensions.\n");
         return EXIT_FAILURE;
     }
- 
+    
+    // Put a guard in case images are not square
+    // This could be relaxed in the future.
+    if (refimg.n != refimg.m || sciimg.n != sciimg.m) {
+        printf("ERROR: Reference or Science images have not square dimensions.\n");
+        return EXIT_FAILURE;
+    }
+    int naxes = sciimg.n; // This is to fix future references to naxes
+
     int deg = (d + 1) * (d + 2) / 2; // number of degree elements //
     int Q = pow(2 * w + 1, 2) * deg; // size of convolution matrix//
     double *C = (double*) calloc(sizeof(double), Q * Q);
@@ -166,7 +173,7 @@ int main (int argc, char* argv[])
     free(D);
     free(C);
     
-// Now we can do the final convolution // 
+    // Now we can do the final convolution //
     double *Con, *K;
     int nml;
     Con = (double*) malloc(sizeof(double)*N);
@@ -193,7 +200,6 @@ int main (int argc, char* argv[])
                     K[i+nk*ml] = K[i+nk*ml]+a[deg*i+ml];
                 }
             }
-            
             ml++;
         }
     }
@@ -240,7 +246,6 @@ int main (int argc, char* argv[])
     double **array;
     int bpix = DOUBLE_IMG;
     char *dfilename, *sciname;
-    //printf("working\n");
     sciname = scifile;
     int naxis = 2;
     nax[0] = naxes; nax[1] = naxes;
