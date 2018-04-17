@@ -12,43 +12,117 @@
 #include "fitsio.h"
 #include <time.h>
 
+void usage(void) {
+    printf("Help coming soon");
+}
+
 // Start the program to output a float //
-int main (void)
+int main (int argc, char* argv[])
 {
     // Start the clock
     clock_t begin = clock();
-    int t;
-    // You need to input how many files you will difference and how many references you will be using //
-    int nstars, fwhm, w, d;
-    FILE *fp;
+    int t = 0;
     
-    //parameters set by the user//
-    fp = fopen("./parms.txt", "r");
-    for (int i = 0; i < 1; i++){
-        fscanf(fp, "%i %i %i %i", &fwhm, &w, &d, &nstars);} // read in the star list //
-    
-    // Now we will read in text files with the names of the files //
-    FILE *fr, *fs, *fl;
-    
-    char listr[1][30];
-    char sname[30];
-    
+    // Parse command line arguments:
+    // Default arguments
+    int nstars = -1; // The number of refernce stars in the refstar file
+    int w = -1;      // The half-width of the kernel side
+    int fwhm = -1;   // The full-width at half-maximum of the stars PSF
+    int d = -1;      // Degree of the interpolating polynomial for the variable kernel
+    char *reffile = NULL;
+    char* scifile = NULL;
+    char refstarsfile_default[] = "./refstars.txt";
+    char *refstarsfile = refstarsfile_default;
+    if ( argc < 2 ) {
+        usage();
+        return EXIT_SUCCESS;
+    } else {
+        ++argv; // Skip the invocation program name
+        --argc;
+        while ( argc > 0 )
+        {
+            if ( !strcmp(*argv, "-nstars") )
+            {
+                ++argv; // Consume one word
+                --argc; // Decrease word counter by 1
+                nstars = atoi(*argv);
+            }
+            else if ( !strcmp(*argv, "-w") ) {
+                ++argv; // Consume one word
+                --argc; // Decrease word counter by 1
+                w = atoi(*argv);
+            }
+            else if ( !strcmp(*argv, "-ref") ) {
+                ++argv; // Consume one word
+                --argc; // Decrease word counter by 1
+                reffile = *argv;
+            }
+            else if ( !strcmp(*argv, "-sci") ) {
+                ++argv; // Consume one word
+                --argc; // Decrease word counter by 1
+                scifile = *argv;
+            }
+            else if ( !strcmp(*argv, "-refstars") ) {
+                ++argv; // Consume one word
+                --argc; // Decrease word counter by 1
+                refstarsfile = *argv;
+            }
+            else if ( !strcmp(*argv, "-fwhm") ) {
+                ++argv; // Consume one word
+                --argc; // Decrease word counter by 1
+                fwhm = atoi(*argv);
+            }
+            else if ( !strcmp(*argv, "-d") ) {
+                ++argv; // Consume one word
+                --argc; // Decrease word counter by 1
+                d = atoi(*argv);
+            }
+            else if ( !strcmp(*argv, "-h") || !strcmp(*argv, "--help") ) {
+                usage();
+                return EXIT_SUCCESS;
+            }
+            else {
+                printf("Unexpected Argument: %s\n", *argv);
+                usage();
+                return EXIT_FAILURE;
+            }
+            ++argv;
+            --argc;
+        }
+    }
+    // Check here which variables were not set
+    if (nstars == -1) {
+        printf("Undefined value for nstars. Exiting.\n");
+        usage();
+        return EXIT_FAILURE;
+    }
+    if (d == -1) {
+        printf("Undefined value for d. Exiting.\n");
+        usage();
+        return EXIT_FAILURE;
+    }
+    if (w == -1) {
+        printf("Undefined value for w. Exiting.\n");
+        usage();
+        return EXIT_FAILURE;
+    }
+    if (fwhm == -1) {
+        printf("Undefined value for fwhm. Exiting.\n");
+        usage();
+        return EXIT_FAILURE;
+    }
+
     int xc[nstars], yc[nstars];
-    
-    fr = fopen("./ref.txt", "r");
-   
-    for (int i = 0; i < 1; i++){
-        fscanf(fr, "%s\n", listr[i]);} // read in the list of references //
-    
-    fs = fopen("./refstars.txt", "r");
-    
+    FILE *fp = fopen(refstarsfile, "r");
     for (int i = 0; i < nstars; i++){
         xc[i] = 0;
         yc[i] = 0;
-        fscanf(fs, "%i %i", &xc[i], &yc[i]);} // read in the star list //
+        fscanf(fp, "%i %i", &xc[i], &yc[i]);} // read in the star list //
+    fclose(fp);
     
+    char listr[1][30];
+    char sname[30];
     fitsfile *fptr;
-    char *reffile;
     int status, bitpix, naxis;
     long naxes;// the size of the axes //
 
@@ -89,15 +163,15 @@ int main (void)
     char listn[1][30];
         
     sprintf(sname, "./img.txt");
-    fl = fopen(sname,"r");
+    fp = fopen(sname,"r");
         
     for (int i = 0; i < 1; i++){
-        fscanf(fl, "%s\n", listn[i]);} // read in file names only //
+        fscanf(fp, "%s\n", listn[i]);} // read in file names only //
+    fclose(fp);
     
     // now we can read in each file to difference against the reference frame //
     fitsfile *fpts;
     float *pixs;
-    char *scifile;
     long fpixs[2];
     double *Sci;
     
@@ -324,7 +398,6 @@ int main (void)
     for (int i = 0; i < Q; i++){
         a[i] = 0;
         a[i] =  xcs[i];
-        //printf("%f\n", a[i]);
     }
     
     //free everything//
