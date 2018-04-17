@@ -174,59 +174,48 @@ int main (int argc, char* argv[])
     free(C);
     
     // Now we can do the final convolution //
-    double *Con, *K;
-    int nml;
-    Con = (double*) malloc(sizeof(double)*N);
-    K = (double*) malloc(sizeof(double)*Q);
+    double *Con = (double*) calloc(sizeof(double), N);
+    double *K = (double*) calloc(sizeof(double), Q);
     
     int L = 2 * w + 1;       // kernel axis //
     int nk = L * L;          // number of kernel elements //
 
     int cent = (nk - 1)/2;//center index
-    for (int i = 0; i < N; i++){
-        Con[i]=0;}
-    for (int i = 0; i < Q; i++){
-        K[i] = 0.0;}
     //do the convolution//
-    int ml=0;
-    for (int m = 0; m <= d;m++){
-        for (int l = 0;l <= d-m;l++){
-            for (int i = 0; i < nk; i++){
-                if (i != cent){
-                    K[i+nk*ml] = a[deg*i+ml];
-                    K[cent+nk*ml] =  K[cent+nk*ml] - a[deg*i+ml];
-                }
-                if (i == cent) {
-                    K[i+nk*ml] = K[i+nk*ml]+a[deg*i+ml];
+    int ml = 0;
+    for (int m = 0; m <= d; m++) {
+        for (int l = 0; l <= d - m; l++) {
+            for (int i = 0; i < nk; i++) {
+                if (i != cent) {
+                    K[i + nk * ml] = a[deg * i + ml];
+                    K[cent + nk * ml] -= a[deg * i + ml];
+                } else {
+                    K[i + nk * ml] += a[deg * i + ml];
                 }
             }
             ml++;
         }
     }
-    
-    nml=0;
-    for (int m = 0; m <= d;m++){
-        for (int l = 0;l <= d-m;l++){
-            for (int j = 0;j < naxes; j++){
-                for (int i = 0;i<naxes;i++){
-                    for(int nn=0;nn<L; nn++){
-                        for(int mm=0;mm<L;mm++){
-                            int ii=i+(mm-w);
-                            int jj=j+(nn-w);
-                            if (ii >=0 && ii < naxes && jj >=0 && jj < naxes){
-                                Con[i+j*naxes] = Con[i+j*naxes] + pow(i,m)*pow(j,l)*Ref[ii+jj*naxes]*K[mm+nn*L+nk*nml];
-                            }// end of if statment //
-                            
-                        }// end of nn loop //
-                    }// end of mm loop //
-                }// end of i loop //
-            }// end of j loop //
+    int nml = 0;
+    for (int m = 0; m <= d;m++) {
+        for (int l = 0; l <= d-m;l++) {
+            for (int j = 0; j < naxes; j++) {
+                for (int i = 0; i < naxes; i++) {
+                    for(int nn = 0; nn < L; nn++) {
+                        for(int mm = 0; mm < L; mm++) {
+                            int ii = i + (mm - w);
+                            int jj = j + (nn - w);
+                            if (ii >= 0 && ii < naxes && jj >= 0 && jj < naxes) {
+                                Con[i + j * naxes] += pow(i, m) * pow(j, l) * Ref[ii + jj * naxes] * K[mm + nn * L + nk * nml];
+                            }
+                        }
+                    }
+                }
+            }
             nml++;
-        }// end of l loop //
-    }// end of m loop //
-
-    //free everything//
-    free(K); 
+        }
+    }
+    free(K);
     
     //Now we can do the subtraction//
     double *Diff;
