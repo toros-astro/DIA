@@ -112,12 +112,14 @@ int main (int argc, char* argv[])
         return EXIT_FAILURE;
     }
 
+    // read in the star list //
     int xc[nstars], yc[nstars];
     FILE *fp = fopen(refstarsfile, "r");
-    for (int i = 0; i < nstars; i++){
-        xc[i] = 0;
-        yc[i] = 0;
-        fscanf(fp, "%i %i", &xc[i], &yc[i]);} // read in the star list //
+    if (fp == NULL) {
+        printf("Unable to open refstars.txt file. Exiting.\n");
+        return EXIT_FAILURE;
+    }
+    for (int i = 0; i < nstars; i++) fscanf(fp, "%d %d", xc + i, yc + i);
     fclose(fp);
     
     char listr[1][30];
