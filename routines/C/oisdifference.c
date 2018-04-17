@@ -155,30 +155,23 @@ int main (int argc, char* argv[])
     // Now we need to make stamps around each star to find the parameters for the kernel //
     
     //parameters that fall out from above//
-    int L = 2*w + 1; // kernel axis //
-    int nk = L*L; // number of kernel elements //
-    int stax = 2*fwhm + 1; // size of star stamps //
-    int S = stax*stax; // number of stamp elements //
-    int deg = (0.5)*(d+1)*(d+2); // number of degree elements //
-    int Q = nk*deg;//size of D matrix//
-    int Qtwo = Q*Q;//size of C matrix//
-    int P = nstars; // number of star stamps to use //
-    int cent = (nk-1)/2;//center of the kernel//
-    
-    double *Rs = (double*) malloc(sizeof(double)*S);
-    double *Ss = (double*) malloc(sizeof(double)*S);
-    
-    double *CRKq = (double*) malloc(sizeof(double)*S);
-    double *CRKn = (double*) malloc(sizeof(double)*S);
+    int L = 2 * w + 1;       // kernel axis //
+    int nk = L * L;          // number of kernel elements //
+    int stax = 2 * fwhm + 1; // size of star stamps //
+    int S = stax * stax;     // number of stamp elements //
+    int deg = (d + 1) * (d + 2) / 2; // number of degree elements //
+    int Q = nk * deg;        //size of D matrix//
+    int cent = (nk - 1) / 2; //center of the kernel//
 
-    double *C = (double*) malloc(sizeof(double)*Qtwo);
+    double *Rs = (double*) malloc(sizeof(double) * S);
+    double *Ss = (double*) malloc(sizeof(double) * S);
+    double *CRKq = (double*) malloc(sizeof(double) * S);
+    double *CRKn = (double*) malloc(sizeof(double) * S);
+    double *Kn = (double*) malloc(sizeof(double) * nk);
+    double *Kq = (double*) malloc(sizeof(double) * nk);
+
+    double *C = (double*) calloc(sizeof(double), Q * Q);
     double *D = (double*) malloc(sizeof(double)*Q);
-
-    double *Kn = (double*) malloc(sizeof(double)*nk);
-    double *Kq = (double*) malloc(sizeof(double)*nk);
-    
-    for (int i = 0; i< Qtwo; i++){
-        C[i] = 0;}
     
     // now we need to solve for the kernel paramters //
     
@@ -195,9 +188,7 @@ int main (int argc, char* argv[])
         
         for (int r = 0; r <= d; r++){
             for (int s = 0; s <= d-r;s++){
-                
                 for (int n = 0; n < nk;n++){
-                    
                     //make the n kernel//
                     for (int i=0; i < nk;i++){
                         Kn[i]=0;}
@@ -210,7 +201,7 @@ int main (int argc, char* argv[])
                         for (int l = 0; l <= d-m; l++){
                             D[qrs]=0;//ensure D is only calculated once for each Q//
                             
-                            for (int k = 0; k < P; k++){
+                            for (int k = 0; k < nstars; k++){
                                 
                                 int xcent = xc[k];//x coordinate of stamp center//
                                 int ycent = yc[k];//y coordinate of stamp center//
@@ -273,13 +264,12 @@ int main (int argc, char* argv[])
     
     //free everything//
     free(CRKn); free(CRKq); free(Kn); free(Kq);free(Ss); free(Rs);
-    //for (i=0; i < Qtwo; i++){
-      //  printf("%f\n", C[i]);}
     
     double *Low, *U, *xcs, *ycs, *a;
     int count;
     double ratio, temp;
     
+    int Qtwo = Q * Q;        //size of C matrix//
     Low = (double*) malloc(sizeof(double)*Qtwo);
     U =  (double*) malloc(sizeof(double)*Qtwo);
     xcs = (double*) malloc(sizeof(double)*Q);
