@@ -151,37 +151,26 @@ int main (int argc, char* argv[])
     }
     fits_close_file(fptr, &status);
     free(pixr);
-
-    char listn[1][30];
     
     // now we can read in each file to difference against the reference frame //
     fitsfile *fpts;
-    float *pixs;
-    long fpixs[2];
-    double *Sci;
-    
-    Sci = (double*) malloc(N*sizeof(double));
-    pixs = (float*) malloc(N*sizeof(float));
-    
-    for (int i = 0; i < N; i++){
-        Sci[i] = 0.0;}
     status = 0;
-    
     fits_open_file(&fpts, scifile, READONLY, &status);
     fits_get_img_dim(fpts, &naxis, &status);
-    
-    fpixs[0] = 1.0;fpixs[1] = 1.0;
+    long fpixs[2] = {1, 1};
+    double *Sci = (double*) calloc(N, sizeof(double));
+    float *pixs = (float*) malloc(N * sizeof(float));
     j = 0;
-    
     // read in the pixel values //
     for (fpixs[1] = 1.0; fpixs[1] <= naxes; fpixs[1]++){
         fits_read_pix(fpts, TFLOAT, fpixs, naxes, 0, pixs, 0, &status);
         for (int i = 0; i < naxes; i++){
             Sci[i+j*naxes] = (double)pixs[i];
-            //printf("%f\n", Sci[i+j*naxes]);
         }
-        j++;}
-    fits_close_file(fpts, &status); free(pixs);
+        j++;
+    }
+    fits_close_file(fpts, &status);
+    free(pixs);
     
     // Now we need to make stamps around each star to find the parameters for the kernel //
     
@@ -459,7 +448,7 @@ int main (int argc, char* argv[])
     int bpix = DOUBLE_IMG;
     char *dfilename, *sciname;
     //printf("working\n");
-    sciname = listn[t];
+    sciname = scifile;
     naxis = 2;
     nax[0] = naxes; nax[1] = naxes;
     
@@ -494,7 +483,7 @@ int main (int argc, char* argv[])
     fitsfile *infptr;      /* pointer to the FITS file, defined in fitsio.h */
     
     char *infilename;
-    infilename = listn[t];  /* name for existing FITS file   */
+    infilename = scifile;  /* name for existing FITS file   */
     
     char card[FLEN_CARD];
     //printf("%s\n", filename);
