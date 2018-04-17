@@ -24,8 +24,9 @@ typedef struct {
 } image;
 
 image fits_get_data(char* filename);
+void make_matrix_system(image ref, image sci, int w, int fwhm, int d, int nstars, int* xc, int* yc, double* C, double* D);
 
-// Start the program to output a float //
+
 int main (int argc, char* argv[])
 {
     // Start the clock
@@ -151,105 +152,14 @@ int main (int argc, char* argv[])
         return EXIT_FAILURE;
     }
  
+
+    int deg = (d + 1) * (d + 2) / 2; // number of degree elements //
+    int Q = pow(2 * w + 1, 2) * deg; // size of convolution matrix//
+    double *C = (double*) calloc(sizeof(double), Q * Q);
+    double *D = (double*) calloc(sizeof(double), Q);
     
     // Now we need to make stamps around each star to find the parameters for the kernel //
-    
-    //parameters that fall out from above//
-    int L = 2 * w + 1;       // kernel axis //
-    int nk = L * L;          // number of kernel elements //
-    int stax = 2 * fwhm + 1; // size of star stamps //
-    int S = stax * stax;     // number of stamp elements //
-    int deg = (d + 1) * (d + 2) / 2; // number of degree elements //
-    int Q = nk * deg;        //size of D matrix//
-    int cent = (nk - 1) / 2; //center of the kernel//
-
-    double *Rs = (double*) malloc(sizeof(double) * S);
-    double *Ss = (double*) malloc(sizeof(double) * S);
-    double *CRKq = (double*) malloc(sizeof(double) * S);
-    double *CRKn = (double*) malloc(sizeof(double) * S);
-    double *Kn = (double*) malloc(sizeof(double) * nk);
-    double *Kq = (double*) malloc(sizeof(double) * nk);
-
-    double *C = (double*) calloc(sizeof(double), Q * Q);
-    double *D = (double*) malloc(sizeof(double)*Q);
-    
-    // now we need to solve for the kernel parameters //
-    int qrs = 0; //initialize the qrs step//
-    for (int q = 0; q < nk; q++) {
-        //make the q kernel//
-        memset(Kq, 0, nk);
-        Kq[q] = 1.0;
-        if (q != cent) Kq[cent] = -1.0;
-        
-        for (int r = 0; r <= d; r++){
-            for (int s = 0; s <= d - r; s++){
-                for (int n = 0; n < nk; n++){
-                    //make the n kernel//
-                    memset(Kn, 0, nk);
-                    Kn[n] = 1.0;
-                    if (n != cent) Kn[cent] = -1.0;
-                    int ml = 0; //initialize the ml step//
-                    for (int m = 0; m <= d; m++){
-                        for (int l = 0; l <= d - m; l++){
-                            D[qrs] = 0; //ensure D is only calculated once for each Q//
-                            for (int k = 0; k < nstars; k++){
-                                int xcent = xc[k]; //x coordinate of stamp center//
-                                int ycent = yc[k]; //y coordinate of stamp center//
-                                //make the star stamps//
-                                for (int i = 0; i < stax; i++){
-                                    for(int j = 0; j < stax; j++){
-                                        Rs[i + j * stax] = Ref[(i + xcent - fwhm) + (j + ycent - fwhm) * naxes];
-                                        Ss[i + j * stax] = Sci[(i + xcent - fwhm) + (j + ycent - fwhm) * naxes];
-                                    }
-                                }
-                                //reinitialize the convolution matrix//
-                                memset(CRKn, 0, S);
-                                memset(CRKq, 0, S);
-                                //now we do the convolution for n and q//
-                                for (int i=0; i<stax;i++){
-                                    for(int j=0;j<stax;j++){
-                                        for (int mm = 0; mm < L; mm++){
-                                            for(int nn = 0; nn < L; nn++){
-                                                int ii = i + (mm - w);//index of convolution//
-                                                int jj = j + (nn - w);//index of convolution//
-                                                if (ii >= 0 && ii < stax && jj >= 0 && jj < stax) {
-                                                    CRKn[i + j * stax] += Rs[ii + jj * stax] * Kn[mm + nn * L];
-                                                    CRKq[i + j * stax] += Rs[ii + jj * stax] * Kq[mm + nn * L];
-                                                }//end of if statement//
-                                            }//end of nn loop//
-                                        }// end of mm loop//
-                                    }//end of j loop//
-                                }//end of i loop//
-                                
-                                int mr = m + r;
-                                int ls = l + s; //exponents for polynomial approximation//
-                                //now we need to fill in C//
-                                for (int i = 0; i < S; i++){
-                                    C[n * deg + ml + qrs * Q] += pow(xcent, mr) * pow(ycent, ls) * CRKn[i] * CRKq[i];
-                                }//end of C loop//
-                                
-                                //now we need to fill in D//
-                                for (int i = 0; i < S; i++){
-                                    D[qrs] += pow(xcent, r) * pow(ycent, s) * Ss[i] * CRKq[i];
-                                }//end of D loop//
-                                
-                            }//end of k loop//
-                            ml++;
-                        }//end of l loop//
-                    }//end of m loop//
-                }//end of n loop//
-                qrs++;
-            }//end of s loop//
-        }//end of r loop //
-    }//end of q loop//
-
-    //free everything//
-    free(CRKn);
-    free(CRKq);
-    free(Kn);
-    free(Kq);
-    free(Ss);
-    free(Rs);
+    make_matrix_system(refimg, sciimg, w, fwhm, d, nstars, xc, yc, C, D);
     
     double *Low, *U, *xcs, *ycs, *a;
     int count;
@@ -332,7 +242,11 @@ int main (int argc, char* argv[])
     Con = (double*) malloc(sizeof(double)*N);
     K = (double*) malloc(sizeof(double)*Q);
     
-    cent = (nk-1)/2;//center index
+    int L = 2 * w + 1;       // kernel axis //
+    int nk = L * L;          // number of kernel elements //
+
+    
+    int cent = (nk - 1)/2;//center index
     for (int i = 0; i < N; i++){
         Con[i]=0;}
     for (int i = 0; i < Q; i++){
@@ -478,6 +392,108 @@ image fits_get_data(char* filename) {
     fits_close_file(fp, &status);
     image img = {data, (int)naxes[0], (int)naxes[1]};
     return img;
+}
+
+void make_matrix_system(image ref, image sci, int w, int fwhm, int d, int nstars, int* xc, int* yc, double* C, double* D) {
+    
+    // Now we need to make stamps around each star to find the parameters for the kernel //
+    //parameters that fall out from above//
+    int naxes = ref.n;
+    double* Ref = ref.data;
+    double* Sci = sci.data;
+    
+    int L = 2 * w + 1;       // kernel axis //
+    int nk = L * L;          // number of kernel elements //
+    int stax = 2 * fwhm + 1; // size of star stamps //
+    int S = stax * stax;     // number of stamp elements //
+    int deg = (d + 1) * (d + 2) / 2; // number of degree elements //
+    int Q = nk * deg;          //size of D matrix//
+    int cent = (nk - 1) / 2; //center of the kernel//
+    
+    double *Rs = (double*) malloc(sizeof(double) * S);
+    double *Ss = (double*) malloc(sizeof(double) * S);
+    double *CRKq = (double*) malloc(sizeof(double) * S);
+    double *CRKn = (double*) malloc(sizeof(double) * S);
+    double *Kn = (double*) malloc(sizeof(double) * nk);
+    double *Kq = (double*) malloc(sizeof(double) * nk);
+    
+    // now we need to solve for the kernel parameters //
+    int qrs = 0; //initialize the qrs step//
+    for (int q = 0; q < nk; q++) {
+        //make the q kernel//
+        memset(Kq, 0, nk);
+        Kq[q] = 1.0;
+        if (q != cent) Kq[cent] = -1.0;
+        
+        for (int r = 0; r <= d; r++){
+            for (int s = 0; s <= d - r; s++){
+                for (int n = 0; n < nk; n++){
+                    //make the n kernel//
+                    memset(Kn, 0, nk);
+                    Kn[n] = 1.0;
+                    if (n != cent) Kn[cent] = -1.0;
+                    int ml = 0; //initialize the ml step//
+                    for (int m = 0; m <= d; m++){
+                        for (int l = 0; l <= d - m; l++){
+                            D[qrs] = 0; //ensure D is only calculated once for each Q//
+                            for (int k = 0; k < nstars; k++){
+                                int xcent = xc[k]; //x coordinate of stamp center//
+                                int ycent = yc[k]; //y coordinate of stamp center//
+                                //make the star stamps//
+                                for (int i = 0; i < stax; i++){
+                                    for(int j = 0; j < stax; j++){
+                                        Rs[i + j * stax] = Ref[(i + xcent - fwhm) + (j + ycent - fwhm) * naxes];
+                                        Ss[i + j * stax] = Sci[(i + xcent - fwhm) + (j + ycent - fwhm) * naxes];
+                                    }
+                                }
+                                //reinitialize the convolution matrix//
+                                memset(CRKn, 0, S);
+                                memset(CRKq, 0, S);
+                                //now we do the convolution for n and q//
+                                for (int i=0; i<stax;i++){
+                                    for(int j=0;j<stax;j++){
+                                        for (int mm = 0; mm < L; mm++){
+                                            for(int nn = 0; nn < L; nn++){
+                                                int ii = i + (mm - w);//index of convolution//
+                                                int jj = j + (nn - w);//index of convolution//
+                                                if (ii >= 0 && ii < stax && jj >= 0 && jj < stax) {
+                                                    CRKn[i + j * stax] += Rs[ii + jj * stax] * Kn[mm + nn * L];
+                                                    CRKq[i + j * stax] += Rs[ii + jj * stax] * Kq[mm + nn * L];
+                                                }//end of if statement//
+                                            }//end of nn loop//
+                                        }// end of mm loop//
+                                    }//end of j loop//
+                                }//end of i loop//
+                                
+                                int mr = m + r;
+                                int ls = l + s; //exponents for polynomial approximation//
+                                //now we need to fill in C//
+                                for (int i = 0; i < S; i++){
+                                    C[n * deg + ml + qrs * Q] += pow(xcent, mr) * pow(ycent, ls) * CRKn[i] * CRKq[i];
+                                }//end of C loop//
+                                
+                                //now we need to fill in D//
+                                for (int i = 0; i < S; i++){
+                                    D[qrs] += pow(xcent, r) * pow(ycent, s) * Ss[i] * CRKq[i];
+                                }//end of D loop//
+                                
+                            }//end of k loop//
+                            ml++;
+                        }//end of l loop//
+                    }//end of m loop//
+                }//end of n loop//
+                qrs++;
+            }//end of s loop//
+        }//end of r loop //
+    }//end of q loop//
+    
+    //free everything//
+    free(CRKn);
+    free(CRKq);
+    free(Kn);
+    free(Kq);
+    free(Ss);
+    free(Rs);
 }
 
 void usage(char *exec_name) {
