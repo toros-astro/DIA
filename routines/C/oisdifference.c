@@ -12,15 +12,14 @@
 #include "fitsio.h"
 #include <time.h>
 
-void usage(void) {
-    printf("Help coming soon");
-}
+void usage(char* exec_name);
 
 // Start the program to output a float //
 int main (int argc, char* argv[])
 {
     // Start the clock
     clock_t begin = clock();
+    char *exec_name = argv[0];
     int t = 0;
     
     // Parse command line arguments:
@@ -34,7 +33,7 @@ int main (int argc, char* argv[])
     char refstarsfile_default[] = "./refstars.txt";
     char *refstarsfile = refstarsfile_default;
     if ( argc < 2 ) {
-        usage();
+        usage(exec_name);
         return EXIT_SUCCESS;
     } else {
         ++argv; // Skip the invocation program name
@@ -78,12 +77,12 @@ int main (int argc, char* argv[])
                 d = atoi(*argv);
             }
             else if ( !strcmp(*argv, "-h") || !strcmp(*argv, "--help") ) {
-                usage();
+                usage(exec_name);
                 return EXIT_SUCCESS;
             }
             else {
                 printf("Unexpected Argument: %s\n", *argv);
-                usage();
+                usage(exec_name);
                 return EXIT_FAILURE;
             }
             ++argv;
@@ -93,22 +92,22 @@ int main (int argc, char* argv[])
     // Check here which variables were not set
     if (nstars == -1) {
         printf("Undefined value for nstars. Exiting.\n");
-        usage();
+        usage(exec_name);
         return EXIT_FAILURE;
     }
     if (d == -1) {
         printf("Undefined value for d. Exiting.\n");
-        usage();
+        usage(exec_name);
         return EXIT_FAILURE;
     }
     if (w == -1) {
         printf("Undefined value for w. Exiting.\n");
-        usage();
+        usage(exec_name);
         return EXIT_FAILURE;
     }
     if (fwhm == -1) {
         printf("Undefined value for fwhm. Exiting.\n");
-        usage();
+        usage(exec_name);
         return EXIT_FAILURE;
     }
 
@@ -543,3 +542,25 @@ int main (int argc, char* argv[])
     free(Ref);
 
 } // end of main file //
+
+
+void usage(char *exec_name) {
+    char *exec_basename = strrchr(exec_name, '/') + 1;
+    if (exec_basename == NULL) exec_basename = exec_name;
+    printf("%s\nAuthor: Ryan Oelkers (c)\n", exec_basename);
+    printf("------------------------\n\n");
+    printf("usage: %s -fwhm <int> -w <int> -d <int> \
+           -ref <filename> -sci <filename> [-refstars <filename>] [-h, --help]\n\n", exec_basename);
+    printf("Arguments:\n");
+    printf("\tfwhm: The approximate full-width at half-maximum of the stars PSF in pixels (integer).\n");
+    printf("\tw: the half-width of the kernel to calculate the optimal difference.\n");
+    printf("\td: Degree of the interpolating polynomial for the variable kernel.\n");
+    printf("\tref: The reference image path.\n");
+    printf("\tsci: The science image path.\n");
+    printf("\trefstars [optional]: The path to the file with the x, y values \
+           of the reference stars to estimate the convolution kernel.\n");
+    printf("\t\tDefault value is \"refstars.txt\".\n");
+    printf("\t-h, --help: Print this help and exit.\n");
+    printf("\n");
+}
+
