@@ -17,6 +17,14 @@ char version_number[] = "1.0.1";
 void usage(char* exec_name);
 void version(char* exec_name);
 
+typedef struct {
+    double* data;
+    int n;
+    int m;
+} image;
+
+image fits_get_data(char* filename);
+
 // Start the program to output a float //
 int main (int argc, char* argv[])
 {
@@ -127,31 +135,17 @@ int main (int argc, char* argv[])
     }
     for (int i = 0; i < nstars; i++) fscanf(fp, "%d %d", xc + i, yc + i);
     fclose(fp);
-    
-    fitsfile *fpt;
-    int status = 0;
-    int bitpix, naxis;
-    long naxes2[2];// the size of the axes //
-    fits_open_file(&fpt, reffile, READONLY, &status);
-    fits_get_img_param(fpt, 2, &bitpix, &naxis, naxes2, &status);
-    int N = (int)(naxes2[0] * naxes2[1]); // size of the image //
-    // now we can read in the pixel values from the reference //
-    long fpixr[2] = {1, 1};
-    double * Ref = (double*) calloc(N, sizeof(double));
-    fits_read_pix(fpt, TDOUBLE, fpixr, N, 0, Ref, 0, &status);
-    fits_close_file(fpt, &status);
-    
-    // now we can read in each file to difference against the reference frame //
-    status = 0;
-    fits_open_file(&fpt, scifile, READONLY, &status);
-    fits_get_img_param(fpt, 2, &bitpix, &naxis, naxes2, &status);
-    long fpixs[2] = {1, 1};
-    double *Sci = (double*) calloc(N, sizeof(double));
-    fits_read_pix(fpt, TDOUBLE, fpixs, N, 0, Sci, 0, &status);
-    fits_close_file(fpt, &status);
-    
-    long naxes = naxes2[0]; // This is to fix future references to naxes
 
+    
+    // Open and read fits files
+    image refimg = fits_get_data(reffile);
+    double* Ref = refimg.data;
+    image sciimg = fits_get_data(scifile);
+    double *Sci = sciimg.data;
+    int N = (int)(sciimg.n * sciimg.m); // The total number of pixels in the images.
+    int naxes = sciimg.n; // This is to fix future references to naxes
+ 
+    
     // Now we need to make stamps around each star to find the parameters for the kernel //
     double *Rs, *Ss, *C, *D, *CRKn, *CRKq, *Kn, *Kq;
     int n, q, mm, nn, l, r, s, m, ii, jj, xcent, ycent;
@@ -428,7 +422,7 @@ int main (int argc, char* argv[])
     char *dfilename, *sciname;
     //printf("working\n");
     sciname = scifile;
-    naxis = 2;
+    int naxis = 2;
     nax[0] = naxes; nax[1] = naxes;
     
     array = malloc(naxes*sizeof(double*));
@@ -441,7 +435,7 @@ int main (int argc, char* argv[])
     
     //sprintf(dfilename, "./d%s",sciname);
     remove(dfilename);
-    status = 0;
+    int status = 0;
     
     fits_create_file(&fptd, dfilename, &status);
     fits_create_img(fptd, bpix, naxis, nax, &status);
@@ -493,6 +487,22 @@ int main (int argc, char* argv[])
 
 } // end of main file //
 
+
+image fits_get_data(char* filename) {
+    fitsfile *fp;
+    int status = 0;
+    int bitpix, naxis;
+    long naxes[2];
+    fits_open_file(&fp, filename, READONLY, &status);
+    fits_get_img_param(fp, 2, &bitpix, &naxis, naxes, &status);
+    int N = (int)(naxes[0] * naxes[1]); // size of the image //
+    long initial_pixel[] = {1, 1};
+    double* data = (double*) calloc(N, sizeof(double));
+    fits_read_pix(fp, TDOUBLE, initial_pixel, N, 0, data, 0, &status);
+    fits_close_file(fp, &status);
+    image img = {data, (int)naxes[0], (int)naxes[1]};
+    return img;
+}
 
 void usage(char *exec_name) {
     char *exec_basename = strrchr(exec_name, '/') + 1;
