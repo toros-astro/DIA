@@ -25,6 +25,7 @@ typedef struct {
 
 image fits_get_data(char* filename);
 void make_matrix_system(image ref, image sci, int w, int fwhm, int d, int nstars, int* xc, int* yc, double* C, double* D);
+void solve_system(int n, double* C, double* D, double* xcs);
 
 
 int main (int argc, char* argv[])
@@ -32,7 +33,6 @@ int main (int argc, char* argv[])
     // Start the clock
     clock_t begin = clock();
     char *exec_name = argv[0];
-    int j;
     
     // Parse command line arguments:
     // Default arguments
@@ -160,68 +160,11 @@ int main (int argc, char* argv[])
     // Now we need to make stamps around each star to find the parameters for the kernel //
     make_matrix_system(refimg, sciimg, w, fwhm, d, nstars, xc, yc, C, D);
     
-    double *Low = (double*) calloc(sizeof(double), Q * Q);
-    double *U =  (double*) calloc(sizeof(double), Q * Q);
-    double *xcs = (double*) malloc(sizeof(double) * Q);
-    double *ycs = (double*) malloc(sizeof(double) * Q);
     double *a = (double*) malloc(sizeof(double) * Q);
-    
-   // Now we need to do the LU decomposition
-    for (int k = 0; k < Q; k++){
-        Low[k + k * Q] = 1.0;
-        for (int i = k + 1; i < Q; i++){
-            Low[k+i*Q] = C[k+i*Q]/C[k+k*Q];
-            for (int j = k + 1; j < Q; j++){
-                C[j+i*Q] = C[j+i*Q] - Low[k+i*Q]*C[j+k*Q];
-            }
-        }
-        for (int j = k; j < Q; j++){
-            U[j+k*Q] = C[k+j*Q];
-        }
-    }
-        
-    // Now we will do Gaussian elimination
-    // Solve for yc
-    for(int i=0; i<Q;i++){
-        ycs[i]=0;xcs[i]=0;}
-    for (int i = 0; i < (Q-1); i++){
-        for (j = (i+1); j<Q; j++){
-            double ratio = Low[j+i*Q] / Low[i+i*Q];
-            for (int count = i; count < Q; count++){
-                Low[count+j*Q] -= (ratio*Low[count+i*count]);}
-            D[j] -= (ratio*D[i]);}}
-
-    ycs[Q-1] = D[Q-1] / Low[(Q-1)+Q*(Q-1)]; 
-
-    for (int i = (Q-2); i >= 0; i--){
-        double temp = D[i];
-        for (j = (i+1); j < Q; j++){
-            temp -= (Low[j+i*Q]*ycs[j]);}
-        ycs[i] = temp / Low[i+i*Q];}
-
-        
-    //Solve for xc
-    for (int i = 0; i < (Q-1); i++){
-        for (j = (i+1); j<Q; j++){
-            double ratio = U[j+i*Q] / U[i+i*Q];
-            for (int count = i; count < Q; count++){
-                U[count+j*Q] -= (ratio*Low[count+i*count]);}
-            ycs[j] -= (ratio*ycs[i]);}}
-    
-    xcs[Q-1] = ycs[Q-1] / U[(Q-1)+Q*(Q-1)]; 
-    
-    for (int i = (Q-2); i >= 0; i--){
-        double temp = ycs[i];
-        for (j = (i+1); j < Q; j++){
-            temp -= (U[j+i*Q]*xcs[j]);}
-        xcs[i] = temp / U[i+i*Q];}
-
-    for (int i = 0; i < Q; i++){
-        a[i] =  xcs[i];
-    }
-    
-    //free everything//
-    free(xcs); free(ycs); free(U); free(Low); free(D); free(C); 
+    // This will solve the system Cx = D and store x in a
+    solve_system(Q, C, D, a);
+    free(D);
+    free(C);
     
 // Now we can do the final convolution // 
     double *Con, *K;
@@ -232,7 +175,6 @@ int main (int argc, char* argv[])
     int L = 2 * w + 1;       // kernel axis //
     int nk = L * L;          // number of kernel elements //
 
-    
     int cent = (nk - 1)/2;//center index
     for (int i = 0; i < N; i++){
         Con[i]=0;}
@@ -481,6 +423,72 @@ void make_matrix_system(image ref, image sci, int w, int fwhm, int d, int nstars
     free(Kq);
     free(Ss);
     free(Rs);
+}
+
+void solve_system(int n, double* C, double* D, double* xcs) {
+    int nsq = n * n;
+    double *Low = (double*) calloc(sizeof(double), nsq);
+    double *U = (double*) calloc(sizeof(double), nsq);
+
+
+    // Now we need to do the LU decomposition
+    for (int k = 0; k < n; k++) {
+        Low[k + k * n] = 1.0;
+        for (int i = k + 1; i < n; i++){
+            Low[k + i * n] = C[k + i * n] / C[k + k * n];
+            for (int j = k + 1; j < n; j++){
+                C[j + i * n] = C[j + i * n] - Low[k + i * n] * C[j + k * n];
+            }
+        }
+        for (int j = k; j < n; j++) {
+            U[j + k * n] = C[k + j * n];
+        }
+    }
+    
+    // Now we will do Gaussian elimination
+    // Solve for xc
+    double *ycs = (double*) calloc(sizeof(double), n);
+    for (int i = 0; i < (n - 1); i++) {
+        for (int j = (i + 1); j < n; j++) {
+            double ratio = Low[j + i * n] / Low[i + i * n];
+            for (int count = i; count < n; count++) {
+                Low[count + j * n] -= ratio * Low[count + i * count];
+            }
+            D[j] -= (ratio * D[i]);
+        }
+    }
+    ycs[n - 1] = D[n - 1] / Low[(n - 1) + n * (n - 1)];
+    for (int i = (n - 2); i >= 0; i--){
+        double temp = D[i];
+        for (int j = (i + 1); j < n; j++){
+            temp -= (Low[j + i * n] * ycs[j]);
+        }
+        ycs[i] = temp / Low[i + i * n];
+    }
+    
+    //Solve for xc
+    for (int i = 0; i < (n - 1); i++){
+        for (int j = (i + 1); j < n; j++){
+            double ratio = U[j + i * n] / U[i + i * n];
+            for (int count = i; count < n; count++){
+                U[count + j * n] -= ratio * Low[count + i * count];
+            }
+            ycs[j] -= (ratio * ycs[i]);
+        }
+    }
+    xcs[n - 1] = ycs[n - 1] / U[(n - 1) + n * (n - 1)];
+    for (int i = (n - 2); i >= 0; i--){
+        double temp = ycs[i];
+        for (int j = (i + 1); j < n; j++){
+            temp -= U[j + i * n] * xcs[j];
+        }
+        xcs[i] = temp / U[i + i * n];
+    }
+
+    //free everything//
+    free(ycs);
+    free(U);
+    free(Low);
 }
 
 void usage(char *exec_name) {
