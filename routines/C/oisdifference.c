@@ -12,6 +12,8 @@
 #include "fitsio.h"
 #include <time.h>
 
+char version_number[] = "1.0.1";
+
 void usage(char* exec_name);
 
 // Start the program to output a float //
@@ -78,6 +80,10 @@ int main (int argc, char* argv[])
             }
             else if ( !strcmp(*argv, "-h") || !strcmp(*argv, "--help") ) {
                 usage(exec_name);
+                return EXIT_SUCCESS;
+            }
+            else if ( !strcmp(*argv, "--version") ) {
+                printf("Version %s", version_number);
                 return EXIT_SUCCESS;
             }
             else {
