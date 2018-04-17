@@ -152,7 +152,6 @@ int main (int argc, char* argv[])
         return EXIT_FAILURE;
     }
  
-
     int deg = (d + 1) * (d + 2) / 2; // number of degree elements //
     int Q = pow(2 * w + 1, 2) * deg; // size of convolution matrix//
     double *C = (double*) calloc(sizeof(double), Q * Q);
@@ -161,52 +160,41 @@ int main (int argc, char* argv[])
     // Now we need to make stamps around each star to find the parameters for the kernel //
     make_matrix_system(refimg, sciimg, w, fwhm, d, nstars, xc, yc, C, D);
     
-    double *Low, *U, *xcs, *ycs, *a;
-    int count;
-    double ratio, temp;
-    
-    int Qtwo = Q * Q;        //size of C matrix//
-    Low = (double*) malloc(sizeof(double)*Qtwo);
-    U =  (double*) malloc(sizeof(double)*Qtwo);
-    xcs = (double*) malloc(sizeof(double)*Q);
-    ycs = (double*) malloc(sizeof(double)*Q);
-    a = (double*) malloc(sizeof(double)*Q);
+    double *Low = (double*) calloc(sizeof(double), Q * Q);
+    double *U =  (double*) calloc(sizeof(double), Q * Q);
+    double *xcs = (double*) malloc(sizeof(double) * Q);
+    double *ycs = (double*) malloc(sizeof(double) * Q);
+    double *a = (double*) malloc(sizeof(double) * Q);
     
    // Now we need to do the LU decomposition
-   
-    for (int i = 0; i < Qtwo; i++){
-        Low[i] = 0.0; U[i] = 0.0;}
-        
     for (int k = 0; k < Q; k++){
-        Low[k+k*Q] = 1.0;
+        Low[k + k * Q] = 1.0;
         for (int i = k + 1; i < Q; i++){
             Low[k+i*Q] = C[k+i*Q]/C[k+k*Q];
-            for (j = k + 1; j < Q; j++){
+            for (int j = k + 1; j < Q; j++){
                 C[j+i*Q] = C[j+i*Q] - Low[k+i*Q]*C[j+k*Q];
             }
         }
-        
-        for (j = k; j < Q; j++){
+        for (int j = k; j < Q; j++){
             U[j+k*Q] = C[k+j*Q];
         }
     }
         
     // Now we will do Gaussian elimination
     // Solve for yc
-    ratio = 0; temp = 0;
     for(int i=0; i<Q;i++){
         ycs[i]=0;xcs[i]=0;}
     for (int i = 0; i < (Q-1); i++){
         for (j = (i+1); j<Q; j++){
-            ratio = Low[j+i*Q] / Low[i+i*Q];
-            for (count = i; count < Q; count++){
+            double ratio = Low[j+i*Q] / Low[i+i*Q];
+            for (int count = i; count < Q; count++){
                 Low[count+j*Q] -= (ratio*Low[count+i*count]);}
             D[j] -= (ratio*D[i]);}}
 
     ycs[Q-1] = D[Q-1] / Low[(Q-1)+Q*(Q-1)]; 
 
     for (int i = (Q-2); i >= 0; i--){
-        temp = D[i]; 
+        double temp = D[i];
         for (j = (i+1); j < Q; j++){
             temp -= (Low[j+i*Q]*ycs[j]);}
         ycs[i] = temp / Low[i+i*Q];}
@@ -215,21 +203,20 @@ int main (int argc, char* argv[])
     //Solve for xc
     for (int i = 0; i < (Q-1); i++){
         for (j = (i+1); j<Q; j++){
-            ratio = U[j+i*Q] / U[i+i*Q];
-            for (count = i; count < Q; count++){
+            double ratio = U[j+i*Q] / U[i+i*Q];
+            for (int count = i; count < Q; count++){
                 U[count+j*Q] -= (ratio*Low[count+i*count]);}
             ycs[j] -= (ratio*ycs[i]);}}
     
     xcs[Q-1] = ycs[Q-1] / U[(Q-1)+Q*(Q-1)]; 
     
     for (int i = (Q-2); i >= 0; i--){
-        temp = ycs[i];
+        double temp = ycs[i];
         for (j = (i+1); j < Q; j++){
             temp -= (U[j+i*Q]*xcs[j]);}
         xcs[i] = temp / U[i+i*Q];}
 
     for (int i = 0; i < Q; i++){
-        a[i] = 0;
         a[i] =  xcs[i];
     }
     
