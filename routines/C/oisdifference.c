@@ -17,8 +17,7 @@ int main (void)
 {
     // Set up the integer index variables to be used (common ones) for loops //
     int i, j, k, t;
-    clock_t begin, end;
-    
+    clock_t begin = clock();
     // You need to input how many files you will difference and how many references you will be using //
     int nstars, fwhm, w, d;
     FILE *fp;
@@ -96,7 +95,6 @@ int main (void)
         fscanf(fl, "%s\n", listn[i]);} // read in file names only //
     
     // now we can read in each file to difference against the reference frame //
-    begin = clock();
     fitsfile *fpts;
     float *pixs;
     char *scifile;
@@ -469,7 +467,7 @@ int main (void)
     fits_close_file(infptr, &status) ;
     fits_close_file(fptd, &status);
     
-    end = clock();
+    clock_t end = clock();
     printf("The difference took %f seconds\n", (double) (end-begin)/CLOCKS_PER_SEC);
 
     free(Ref);
