@@ -144,45 +144,46 @@ int main (int argc, char* argv[])
     double *Sci = sciimg.data;
     int N = (int)(sciimg.n * sciimg.m); // The total number of pixels in the images.
     int naxes = sciimg.n; // This is to fix future references to naxes
+    
+    // Put a guard in case images are of different shape
+    if (refimg.n != sciimg.n || refimg.m != sciimg.m) {
+        printf("ERROR: Reference and Science images have different dimensions.\n");
+        return EXIT_FAILURE;
+    }
  
     
     // Now we need to make stamps around each star to find the parameters for the kernel //
-    double *Rs, *Ss, *C, *D, *CRKn, *CRKq, *Kn, *Kq;
-    int n, q, mm, nn, l, r, s, m, ii, jj, xcent, ycent;
-    int stax, L, mr, ls, ml,qrs, nk, S, deg, P, Q, Qtwo, cent;
     
     //parameters that fall out from above//
-    L = 2*w + 1; // kernel axis //
-    nk = L*L; // number of kernel elements //
-    stax = 2*fwhm + 1; // size of star stamps //
-    S = stax*stax; // number of stamp elements //
-    deg = (0.5)*(d+1)*(d+2); // number of degree elements //
-    Q = nk*deg;//size of D matrix//
-    Qtwo = Q*Q;//size of C matrix//
-    P = nstars; // number of star stamps to use //
-    cent = (nk-1)/2;//center of the kernel//
+    int L = 2*w + 1; // kernel axis //
+    int nk = L*L; // number of kernel elements //
+    int stax = 2*fwhm + 1; // size of star stamps //
+    int S = stax*stax; // number of stamp elements //
+    int deg = (0.5)*(d+1)*(d+2); // number of degree elements //
+    int Q = nk*deg;//size of D matrix//
+    int Qtwo = Q*Q;//size of C matrix//
+    int P = nstars; // number of star stamps to use //
+    int cent = (nk-1)/2;//center of the kernel//
     
-    printf("The kernel size is %d x %d, the polynomial degree is %d, and %d stars were used.\n", L, L, d, P);
+    double *Rs = (double*) malloc(sizeof(double)*S);
+    double *Ss = (double*) malloc(sizeof(double)*S);
     
-    Rs = (double*) malloc(sizeof(double)*S);
-    Ss = (double*) malloc(sizeof(double)*S);
-    
-    CRKq = (double*) malloc(sizeof(double)*S);
-    CRKn = (double*) malloc(sizeof(double)*S);
+    double *CRKq = (double*) malloc(sizeof(double)*S);
+    double *CRKn = (double*) malloc(sizeof(double)*S);
 
-    C = (double*) malloc(sizeof(double)*Qtwo);
-    D = (double*) malloc(sizeof(double)*Q);
+    double *C = (double*) malloc(sizeof(double)*Qtwo);
+    double *D = (double*) malloc(sizeof(double)*Q);
 
-    Kn = (double*) malloc(sizeof(double)*nk);
-    Kq = (double*) malloc(sizeof(double)*nk);
+    double *Kn = (double*) malloc(sizeof(double)*nk);
+    double *Kq = (double*) malloc(sizeof(double)*nk);
     
     for (int i = 0; i< Qtwo; i++){
         C[i] = 0;}
     
     // now we need to solve for the kernel paramters //
     
-    qrs=0;//initialize the qrs step//
-    for (q=0; q<nk; q++){
+    int qrs=0;//initialize the qrs step//
+    for (int q=0; q<nk; q++){
         
         //make the q kernel//
         for (int i=0;i<nk;i++){
@@ -192,10 +193,10 @@ int main (int argc, char* argv[])
             Kq[cent]=-1.0;
         }
         
-        for (r = 0; r <= d; r++){
-            for (s = 0; s <= d-r;s++){
+        for (int r = 0; r <= d; r++){
+            for (int s = 0; s <= d-r;s++){
                 
-                for (n = 0; n < nk;n++){
+                for (int n = 0; n < nk;n++){
                     
                     //make the n kernel//
                     for (int i=0; i < nk;i++){
@@ -204,15 +205,15 @@ int main (int argc, char* argv[])
                     if (n !=cent){
                         Kn[cent]=-1.0;
                     }
-                    ml=0;//initialize the ml step//
-                    for (m = 0; m <= d;m++){
-                        for (l = 0; l <= d-m; l++){
+                    int ml=0;//initialize the ml step//
+                    for (int m = 0; m <= d;m++){
+                        for (int l = 0; l <= d-m; l++){
                             D[qrs]=0;//ensure D is only calculated once for each Q//
                             
                             for (int k = 0; k < P; k++){
                                 
-                                xcent = xc[k];//x coordinate of stamp center//
-                                ycent = yc[k];//y coordinate of stamp center//
+                                int xcent = xc[k];//x coordinate of stamp center//
+                                int ycent = yc[k];//y coordinate of stamp center//
                                 
                                 //make the star stamps//
                                 for (int i=0;i<stax;i++){
@@ -230,10 +231,10 @@ int main (int argc, char* argv[])
                                 //now we do the convolution for n and q//
                                 for (int i=0; i<stax;i++){
                                     for(int j=0;j<stax;j++){
-                                        for (mm=0;mm<L;mm++){
-                                            for(nn=0;nn<L;nn++){
-                                                ii=i+(mm-w);//index of convolution//
-                                                jj=j+(nn-w);//index of convolution//
+                                        for (int mm=0;mm<L;mm++){
+                                            for(int nn=0;nn<L;nn++){
+                                                int ii=i+(mm-w);//index of convolution//
+                                                int jj=j+(nn-w);//index of convolution//
                                                 if (ii>=0 && ii<stax && jj>=0 && jj < stax){
                                                     CRKn[i+j*stax]=CRKn[i+j*stax]+Rs[ii+jj*stax]*Kn[mm+nn*L];
                                                     CRKq[i+j*stax]=CRKq[i+j*stax]+Rs[ii+jj*stax]*Kq[mm+nn*L];
@@ -243,7 +244,8 @@ int main (int argc, char* argv[])
                                     }//end of j loop//
                                 }//end of i loop//
                                 
-                                mr = m+r; ls = l+s;//exponents for polynomial approximation//
+                                int mr = m+r;
+                                int ls = l+s; //exponents for polynomial approximation//
                                 
                                 //now we need to fill in C//
                                 for (int i=0;i<S;i++){
@@ -361,8 +363,8 @@ int main (int argc, char* argv[])
         K[i] = 0.0;}
     //do the convolution//
     ml=0;
-    for (m = 0; m <= d;m++){
-        for (l = 0;l <= d-m;l++){
+    for (int m = 0; m <= d;m++){
+        for (int l = 0;l <= d-m;l++){
             for (int i = 0; i < nk; i++){
                 if (i != cent){
                     K[i+nk*ml] = a[deg*i+ml];
@@ -379,14 +381,14 @@ int main (int argc, char* argv[])
     
     //printf("%f\n", a[n+nk*ml], m,l,ml);
     nml=0;
-    for (m = 0; m <= d;m++){
-        for (l = 0;l <= d-m;l++){
+    for (int m = 0; m <= d;m++){
+        for (int l = 0;l <= d-m;l++){
             for (int j = 0;j < naxes; j++){
                 for (int i = 0;i<naxes;i++){
-                    for(nn=0;nn<L; nn++){
-                        for(mm=0;mm<L;mm++){
-                            ii=i+(mm-w);
-                            jj=j+(nn-w);
+                    for(int nn=0;nn<L; nn++){
+                        for(int mm=0;mm<L;mm++){
+                            int ii=i+(mm-w);
+                            int jj=j+(nn-w);
                             if (ii >=0 && ii < naxes && jj >=0 && jj < naxes){
                                 Con[i+j*naxes] = Con[i+j*naxes] + pow(i,m)*pow(j,l)*Ref[ii+jj*naxes]*K[mm+nn*L+nk*nml];
                             }// end of if statment //
