@@ -184,66 +184,50 @@ int main (int argc, char* argv[])
     
     // Now we need to make a fits file for the differenced image //
     fitsfile *fpt;
-    long fpixel, nelements, nax[2];
-    double **array;
-    int bpix = DOUBLE_IMG;
-    char *dfilename, *sciname;
-    sciname = scifile;
+    long nax[2] = {naxes, naxes};
     int naxis = 2;
-    nax[0] = naxes; nax[1] = naxes;
-    
-    array = malloc(naxes*sizeof(double*));
-    
-    for (int i = 0; i< naxes; i++){
-        array[i] = (double*) malloc(sizeof(double)*N);}
-    for (int i = 1; i < naxes; i++){
-        array[i] = array[i-1]+naxes;}
-    dfilename = "dimg.fits";
-    
-    remove(dfilename);
     int status = 0;
-    
-    fits_create_file(&fpt, dfilename, &status);
-    fits_create_img(fpt, bpix, naxis, nax, &status);
-    
+    remove("dimg.fits");
+    fits_create_file(&fpt, "dimg.fits", &status);
+    fits_create_img(fpt, DOUBLE_IMG, naxis, nax, &status);
+
+    // I need an auxiliary array to transpose the array to save
+    double **array = malloc(naxes * sizeof(double*));
+    for (int i = 0; i < naxes; i++){
+        array[i] = (double*) malloc(sizeof(double) * N);
+    }
+    for (int i = 1; i < naxes; i++){
+        array[i] = array[i - 1] + naxes;
+    }
+    // Need to transpose the array to save it
     for (int j = 0; j < naxes; j++){
         for(int i = 0; i < naxes; i++){
-            array[j][i] = Diff[i+j*naxes];}}
-    
-    fpixel = 1;
-    nelements = nax[0]*nax[1];
-    
+            array[j][i] = Diff[i + j * naxes];
+        }
+    }
+    long fpixel = 1;
+    long nelements = nax[0] * nax[1];
     fits_write_img(fpt, TDOUBLE, fpixel, nelements, array[0], &status);
     
     //free everything//
     free(Diff); free(array);
     
     // Set the Header on the new image
-    fitsfile *infptr;      /* pointer to the FITS file, defined in fitsio.h */
-    
-    char *infilename;
-    infilename = scifile;  /* name for existing FITS file   */
+    fitsfile *fphead;      /* pointer to the FITS file, defined in fitsio.h */
     
     char card[FLEN_CARD];
-    //printf("%s\n", filename);
-    int nkeys1;
-    
+    int nkeys;
     status = 0;
-    
-    /*open the existing FITS file */
-    fits_open_file(&infptr, infilename, READWRITE, &status);
-    
-    //copy the header data
-    fits_get_hdrspace(infptr, &nkeys1, NULL, &status);
-    
-    
-    for (int i = 11; i < nkeys1; i++){
-        fits_read_record(infptr, i, card, &status);
-        //printf("%s\n", card);
-        fits_write_record(fpt, card, &status);}
+    fits_open_file(&fphead, scifile, READWRITE, &status);
+    fits_get_hdrspace(fphead, &nkeys, NULL, &status);
+    // Copy the header over from card #11
+    for (int i = 11; i < nkeys; i++){
+        fits_read_record(fphead, i, card, &status);
+        fits_write_record(fpt, card, &status);
+    }
     
     // close everything //
-    fits_close_file(infptr, &status) ;
+    fits_close_file(fphead, &status) ;
     fits_close_file(fpt, &status);
     
     clock_t end = clock();
