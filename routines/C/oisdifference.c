@@ -16,13 +16,11 @@
 int main (void)
 {
     // Set up the integer index variables to be used (common ones) for loops //
-    int i, j, k, h, t;
+    int i, j, k, t;
     clock_t begin, end;
-    double time_spent;
     
     // You need to input how many files you will difference and how many references you will be using //
     int nstars, fwhm, w, d;
-    char parms[30];
     FILE *fp;
     
     //parameters set by the user//
@@ -31,10 +29,10 @@ int main (void)
         fscanf(fp, "%i %i %i %i", &fwhm, &w, &d, &nstars);} // read in the star list //
     
     // Now we will read in text files with the names of the files //
-    FILE *fr, *ff, *fs, *fl, *fk;
+    FILE *fr, *fs, *fl;
     
     char listr[1][30];
-    char starname[30], sname[30];
+    char sname[30];
     
     int xc[nstars], yc[nstars];
     
@@ -133,7 +131,7 @@ int main (void)
     // Now we need to make stamps around each star to find the parameters for the kernel //
     
     double *Rs, *Ss, *C, *D, *CRKn, *CRKq, *Kn, *Kq;
-    int n, q, mm, nn, l, r, s, m, ii, jj, p, De, Ce, xcent, ycent; 
+    int n, q, mm, nn, l, r, s, m, ii, jj, xcent, ycent;
     int stax, L, mr, ls, ml,qrs, nk, S, deg, P, Q, Qtwo, cent;
     
     //parameters that fall out from above//
@@ -340,7 +338,7 @@ int main (void)
     free(xcs); free(ycs); free(U); free(Low); free(D); free(C); 
     
 // Now we can do the final convolution // 
-    double *Con, *K, iii, jjj;
+    double *Con, *K;
     int nml;
     Con = (double*) malloc(sizeof(double)*N);
     K = (double*) malloc(sizeof(double)*Q);
@@ -407,7 +405,7 @@ int main (void)
     
     // Now we need to make a fits file for the differenced image //
     fitsfile *fptd;
-    long fpixel, nelements, exposure, nax[2];
+    long fpixel, nelements, nax[2];
     double **array;
     int bpix = DOUBLE_IMG;
     char *dfilename, *sciname;
@@ -451,7 +449,7 @@ int main (void)
     
     char card[FLEN_CARD];
     //printf("%s\n", filename);
-    int morekeys, hdutype, nkeys1,nkeys2, keypos, hdunum;
+    int nkeys1;
     
     status = 0;
     
