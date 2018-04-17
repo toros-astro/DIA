@@ -26,7 +26,7 @@ typedef struct {
 image fits_get_data(char* filename);
 void make_matrix_system(image ref, image sci, int w, int fwhm, int d, int nstars, int* xc, int* yc, double* C, double* D);
 void solve_system(int n, double* C, double* D, double* xcs);
-
+void var_convolve(int w, int d, int Q, double* a, int naxes, double* Ref, double* Con);
 
 int main (int argc, char* argv[])
 {
@@ -166,71 +166,24 @@ int main (int argc, char* argv[])
     
     // Now we need to make stamps around each star to find the parameters for the kernel //
     make_matrix_system(refimg, sciimg, w, fwhm, d, nstars, xc, yc, C, D);
-    
     double *a = (double*) malloc(sizeof(double) * Q);
     // This will solve the system Cx = D and store x in a
     solve_system(Q, C, D, a);
     free(D);
     free(C);
-    
-    // Now we can do the final convolution //
     double *Con = (double*) calloc(sizeof(double), N);
-    double *K = (double*) calloc(sizeof(double), Q);
+    var_convolve(w, d, Q, a, naxes, Ref, Con);
+    free(Ref);
     
-    int L = 2 * w + 1;       // kernel axis //
-    int nk = L * L;          // number of kernel elements //
-
-    int cent = (nk - 1)/2;//center index
-    //do the convolution//
-    int ml = 0;
-    for (int m = 0; m <= d; m++) {
-        for (int l = 0; l <= d - m; l++) {
-            for (int i = 0; i < nk; i++) {
-                if (i != cent) {
-                    K[i + nk * ml] = a[deg * i + ml];
-                    K[cent + nk * ml] -= a[deg * i + ml];
-                } else {
-                    K[i + nk * ml] += a[deg * i + ml];
-                }
-            }
-            ml++;
-        }
-    }
-    int nml = 0;
-    for (int m = 0; m <= d;m++) {
-        for (int l = 0; l <= d-m;l++) {
-            for (int j = 0; j < naxes; j++) {
-                for (int i = 0; i < naxes; i++) {
-                    for(int nn = 0; nn < L; nn++) {
-                        for(int mm = 0; mm < L; mm++) {
-                            int ii = i + (mm - w);
-                            int jj = j + (nn - w);
-                            if (ii >= 0 && ii < naxes && jj >= 0 && jj < naxes) {
-                                Con[i + j * naxes] += pow(i, m) * pow(j, l) * Ref[ii + jj * naxes] * K[mm + nn * L + nk * nml];
-                            }
-                        }
-                    }
-                }
-            }
-            nml++;
-        }
-    }
-    free(K);
-    
-    //Now we can do the subtraction//
-    double *Diff;
-    
-    Diff = (double*) malloc(sizeof(double)*N);
-    
+    // Perform the subtraction //
+    double *Diff = (double*) malloc(sizeof(double)*N);
     for (int i = 0; i < N; i++){
-        Diff[i] = 0;
-        Diff[i] = Sci[i]-Con[i]; // the difference //
+        Diff[i] = Sci[i] - Con[i];
     }
-    // free everything//
     free(Sci); free(Con);
     
     // Now we need to make a fits file for the differenced image //
-    fitsfile *fptd;
+    fitsfile *fpt;
     long fpixel, nelements, nax[2];
     double **array;
     int bpix = DOUBLE_IMG;
@@ -250,8 +203,8 @@ int main (int argc, char* argv[])
     remove(dfilename);
     int status = 0;
     
-    fits_create_file(&fptd, dfilename, &status);
-    fits_create_img(fptd, bpix, naxis, nax, &status);
+    fits_create_file(&fpt, dfilename, &status);
+    fits_create_img(fpt, bpix, naxis, nax, &status);
     
     for (int j = 0; j < naxes; j++){
         for(int i = 0; i < naxes; i++){
@@ -260,7 +213,7 @@ int main (int argc, char* argv[])
     fpixel = 1;
     nelements = nax[0]*nax[1];
     
-    fits_write_img(fptd, TDOUBLE, fpixel, nelements, array[0], &status);
+    fits_write_img(fpt, TDOUBLE, fpixel, nelements, array[0], &status);
     
     //free everything//
     free(Diff); free(array);
@@ -287,11 +240,11 @@ int main (int argc, char* argv[])
     for (int i = 11; i < nkeys1; i++){
         fits_read_record(infptr, i, card, &status);
         //printf("%s\n", card);
-        fits_write_record(fptd, card, &status);}
+        fits_write_record(fpt, card, &status);}
     
     // close everything //
     fits_close_file(infptr, &status) ;
-    fits_close_file(fptd, &status);
+    fits_close_file(fpt, &status);
     
     clock_t end = clock();
     printf("The difference took %f seconds\n", (double) (end-begin)/CLOCKS_PER_SEC);
@@ -483,6 +436,51 @@ void solve_system(int n, double* C, double* D, double* xcs) {
     free(ycs);
     free(U);
     free(Low);
+}
+
+void var_convolve(int w, int d, int Q, double* a, int naxes, double* Ref, double* Con) {
+    int L = 2 * w + 1;       // kernel axis //
+    int nk = pow(2 * w + 1, 2); // number of kernel elements //
+    int deg = (d + 1) * (d + 2) / 2; // number of degree elements //
+
+    // Now we can do the final convolution //
+    double *K = (double*) calloc(sizeof(double), Q);
+    int cent = (nk - 1) / 2; //center index
+    //do the convolution//
+    int ml = 0;
+    for (int m = 0; m <= d; m++) {
+        for (int l = 0; l <= d - m; l++) {
+            for (int i = 0; i < nk; i++) {
+                if (i != cent) {
+                    K[i + nk * ml] = a[deg * i + ml];
+                    K[cent + nk * ml] -= a[deg * i + ml];
+                } else {
+                    K[i + nk * ml] += a[deg * i + ml];
+                }
+            }
+            ml++;
+        }
+    }
+    int nml = 0;
+    for (int m = 0; m <= d;m++) {
+        for (int l = 0; l <= d-m;l++) {
+            for (int j = 0; j < naxes; j++) {
+                for (int i = 0; i < naxes; i++) {
+                    for(int nn = 0; nn < L; nn++) {
+                        for(int mm = 0; mm < L; mm++) {
+                            int ii = i + (mm - w);
+                            int jj = j + (nn - w);
+                            if (ii >= 0 && ii < naxes && jj >= 0 && jj < naxes) {
+                                Con[i + j * naxes] += pow(i, m) * pow(j, l) * Ref[ii + jj * naxes] * K[mm + nn * L + nk * nml];
+                            }
+                        }
+                    }
+                }
+            }
+            nml++;
+        }
+    }
+    free(K);
 }
 
 void usage(char *exec_name) {
