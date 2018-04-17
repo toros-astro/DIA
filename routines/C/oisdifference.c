@@ -23,7 +23,7 @@ int main (int argc, char* argv[])
     // Start the clock
     clock_t begin = clock();
     char *exec_name = argv[0];
-    int t = 0;
+    int j;
     
     // Parse command line arguments:
     // Default arguments
@@ -128,52 +128,31 @@ int main (int argc, char* argv[])
     for (int i = 0; i < nstars; i++) fscanf(fp, "%d %d", xc + i, yc + i);
     fclose(fp);
     
-    
-    fitsfile *fptr;
-    int bitpix, naxis;
-    long naxes;// the size of the axes //
+    fitsfile *fpt;
     int status = 0;
-    // get the image dimensions //
-    fits_open_file(&fptr, reffile, READONLY, &status);
-    fits_get_img_param(fptr, 2, &bitpix, &naxis, &naxes, &status);
-    int N = (int)(naxes * naxes); // size of the image //
+    int bitpix, naxis;
+    long naxes2[2];// the size of the axes //
+    fits_open_file(&fpt, reffile, READONLY, &status);
+    fits_get_img_param(fpt, 2, &bitpix, &naxis, naxes2, &status);
+    int N = (int)(naxes2[0] * naxes2[1]); // size of the image //
     // now we can read in the pixel values from the reference //
     long fpixr[2] = {1, 1};
     double * Ref = (double*) calloc(N, sizeof(double));
-    float * pixr = (float*) malloc(N*sizeof(float));
-    int j = 0;
-    // read in the pixel values //
-    for (fpixr[1] = 1; fpixr[1] <= naxes; fpixr[1]++){
-        fits_read_pix(fptr, TFLOAT, fpixr, naxes, 0, pixr, 0, &status);
-        for (int i = 0; i < naxes; i++){
-            Ref[i+j*naxes] = (double) pixr[i];}
-        j++;
-    }
-    fits_close_file(fptr, &status);
-    free(pixr);
+    fits_read_pix(fpt, TDOUBLE, fpixr, N, 0, Ref, 0, &status);
+    fits_close_file(fpt, &status);
     
     // now we can read in each file to difference against the reference frame //
-    fitsfile *fpts;
     status = 0;
-    fits_open_file(&fpts, scifile, READONLY, &status);
-    fits_get_img_dim(fpts, &naxis, &status);
+    fits_open_file(&fpt, scifile, READONLY, &status);
+    fits_get_img_param(fpt, 2, &bitpix, &naxis, naxes2, &status);
     long fpixs[2] = {1, 1};
     double *Sci = (double*) calloc(N, sizeof(double));
-    float *pixs = (float*) malloc(N * sizeof(float));
-    j = 0;
-    // read in the pixel values //
-    for (fpixs[1] = 1.0; fpixs[1] <= naxes; fpixs[1]++){
-        fits_read_pix(fpts, TFLOAT, fpixs, naxes, 0, pixs, 0, &status);
-        for (int i = 0; i < naxes; i++){
-            Sci[i+j*naxes] = (double)pixs[i];
-        }
-        j++;
-    }
-    fits_close_file(fpts, &status);
-    free(pixs);
+    fits_read_pix(fpt, TDOUBLE, fpixs, N, 0, Sci, 0, &status);
+    fits_close_file(fpt, &status);
     
+    long naxes = naxes2[0]; // This is to fix future references to naxes
+
     // Now we need to make stamps around each star to find the parameters for the kernel //
-    
     double *Rs, *Ss, *C, *D, *CRKn, *CRKq, *Kn, *Kq;
     int n, q, mm, nn, l, r, s, m, ii, jj, xcent, ycent;
     int stax, L, mr, ls, ml,qrs, nk, S, deg, P, Q, Qtwo, cent;
