@@ -192,22 +192,15 @@ int main (int argc, char* argv[])
     fits_create_img(fpt, DOUBLE_IMG, naxis, nax, &status);
 
     // I need an auxiliary array to transpose the array to save
-    double **array = malloc(naxes * sizeof(double*));
-    for (int i = 0; i < naxes; i++){
-        array[i] = (double*) malloc(sizeof(double) * N);
-    }
-    for (int i = 1; i < naxes; i++){
-        array[i] = array[i - 1] + naxes;
-    }
+    double *array = malloc(N * sizeof(double));
     // Need to transpose the array to save it
     for (int j = 0; j < naxes; j++){
         for(int i = 0; i < naxes; i++){
-            array[j][i] = Diff[i + j * naxes];
+            array[j + i * naxes] = Diff[i + j * naxes];
         }
     }
     long fpixel = 1;
-    long nelements = nax[0] * nax[1];
-    fits_write_img(fpt, TDOUBLE, fpixel, nelements, array[0], &status);
+    fits_write_img(fpt, TDOUBLE, fpixel, N, array, &status);
     
     //free everything//
     free(Diff); free(array);
