@@ -194,15 +194,16 @@ void usage(char *exec_name) {
     printf("%s\nAuthor: Ryan Oelkers (c)\n", exec_basename);
     printf("------------------------\n\n");
     printf("usage: %s -fwhm <int> -w <int> -d <int> \
-           -ref <filename> -sci <filename> [-refstars <filename>] [-h, --help] [--version]\n\n", exec_basename);
+-ref <filename> -sci <filename> -nstars <int> [-refstars <filename>] [-h, --help] [--version]\n\n", exec_basename);
     printf("Arguments:\n");
     printf("\t-fwhm: The approximate full-width at half-maximum of the stars PSF in pixels (integer).\n");
     printf("\t-w: the half-width of the kernel to calculate the optimal difference.\n");
     printf("\t-d: Degree of the interpolating polynomial for the variable kernel.\n");
     printf("\t-ref: The reference image path.\n");
     printf("\t-sci: The science image path.\n");
+    printf("\t-nstars: The number of reference stars.\n");
     printf("\t-refstars [optional]: The path to the file with the x, y values \
-           of the reference stars to estimate the convolution kernel.\n");
+of the reference stars to estimate the convolution kernel.\n");
     printf("\t\tDefault value is \"refstars.txt\".\n");
     printf("\t-h, --help: Print this help and exit.\n");
     printf("\t--version: Print version information and exit.\n");
