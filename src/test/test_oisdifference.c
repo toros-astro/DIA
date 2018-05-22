@@ -29,9 +29,8 @@ int main(void) {
         }
     }
     fclose(fp);
-    
-    int kw = 1; //3, 5
-    int fwhm = 0;
+    int kw = 3;
+    int fwhm = 11;
     int d = 0;
     int nstars = 10;
     int xc[nstars], yc[nstars];
@@ -55,6 +54,10 @@ int main(void) {
     for (int i = 0; i < h * w; i++) norm += subt[i] * subt[i];
     
     printf("Norm: %f\n", norm);
+    
+    free(ref);
+    free(sci);
+    free(subt);
     
     return EXIT_SUCCESS;
 }
