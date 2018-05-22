@@ -38,6 +38,8 @@ int main (int argc, char* argv[])
     char* scifile = NULL;
     char refstarsfile_default[] = "./refstars.txt";
     char *refstarsfile = refstarsfile_default;
+    char outputfile_default[] = "diff_img.fits";
+    char *outputfile =outputfile_default;
     if ( argc < 2 ) {
         usage(exec_name);
         return EXIT_SUCCESS;
@@ -81,6 +83,11 @@ int main (int argc, char* argv[])
                 ++argv; // Consume one word
                 --argc; // Decrease word counter by 1
                 d = atoi(*argv);
+            }
+            else if ( !strcmp(*argv, "-o") ) {
+                ++argv; // Consume one word
+                --argc; // Decrease word counter by 1
+                outputfile = *argv;
             }
             else if ( !strcmp(*argv, "-h") || !strcmp(*argv, "--help") ) {
                 usage(exec_name);
@@ -176,7 +183,7 @@ int main (int argc, char* argv[])
     free(Sci); free(Con);
     
     image diffimg = {Diff, naxes, naxes};
-    int success = fits_write_to("diff_img.fits", diffimg, scifile);
+    int success = fits_write_to(outputfile, diffimg, scifile);
     if (success == EXIT_FAILURE) {
         printf("Problem writing diff FITS file.\n");
         return EXIT_FAILURE;
@@ -194,7 +201,7 @@ void usage(char *exec_name) {
     printf("%s\nAuthor: Ryan Oelkers (c)\n", exec_basename);
     printf("------------------------\n\n");
     printf("usage: %s -fwhm <int> -w <int> -d <int> \
--ref <filename> -sci <filename> -nstars <int> [-refstars <filename>] [-h, --help] [--version]\n\n", exec_basename);
+-ref <filename> -sci <filename> -nstars <int> [-refstars <filename>] [-o <filename>] [-h, --help] [--version]\n\n", exec_basename);
     printf("Arguments:\n");
     printf("\t-fwhm: The approximate full-width at half-maximum of the stars PSF in pixels (integer).\n");
     printf("\t-w: the half-width of the kernel to calculate the optimal difference.\n");
@@ -205,6 +212,8 @@ void usage(char *exec_name) {
     printf("\t-refstars [optional]: The path to the file with the x, y values \
 of the reference stars to estimate the convolution kernel.\n");
     printf("\t\tDefault value is \"refstars.txt\".\n");
+    printf("\t-o [optional]: The path to the subtraction fits file.\n");
+    printf("\t\tDefault value is \"diff_img.fits\".\n");
     printf("\t-h, --help: Print this help and exit.\n");
     printf("\t--version: Print version information and exit.\n");
     printf("\n");
