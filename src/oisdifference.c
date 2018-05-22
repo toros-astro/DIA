@@ -1,5 +1,33 @@
 #include "oisdifference.h"
 
+
+int perform_subtraction(image ref, image sci, int w, int fwhm,\
+                         int d, int nstars, int* xc, int* yc, double* subtraction) {
+    int deg = (d + 1) * (d + 2) / 2; // number of degree elements //
+    int Q = pow(2 * w + 1, 2) * deg; // size of convolution matrix//
+    double *C = (double*) calloc(sizeof(double), Q * Q);
+    double *D = (double*) calloc(sizeof(double), Q);
+
+    // Now we need to make stamps around each star to find the parameters for the kernel //
+    make_matrix_system(ref, sci, w, fwhm, d, nstars, xc, yc, C, D);
+    double *a = (double*) malloc(sizeof(double) * Q);
+    // This will solve the system Cx = D and store x in a
+    solve_system(Q, C, D, a);
+    free(D);
+    free(C);
+    double *Con = (double*) calloc(sizeof(double), sci.n * sci.m);
+    double *Ref = ref.data;
+    double *Sci = sci.data;
+    var_convolve(w, d, Q, a, sci.n, Ref, Con);
+
+    // Perform the subtraction //
+    for (int i = 0; i < sci.n * sci.m; i++) {
+        subtraction[i] = Sci[i] - Con[i];
+    }
+    free(Con);
+    return EXIT_SUCCESS;
+}
+
 void make_matrix_system(image ref, image sci, int w, int fwhm, int d, int nstars, int* xc, int* yc, double* C, double* D) {
     
     // Now we need to make stamps around each star to find the parameters for the kernel //

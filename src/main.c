@@ -143,7 +143,6 @@ int main (int argc, char* argv[])
     double* Ref = refimg.data;
     image sciimg = fits_get_data(scifile);
     double *Sci = sciimg.data;
-    int N = (int)(sciimg.n * sciimg.m); // The total number of pixels in the images.
     
     // Put a guard in case images are of different shape
     if (refimg.n != sciimg.n || refimg.m != sciimg.m) {
@@ -159,28 +158,11 @@ int main (int argc, char* argv[])
     }
     int naxes = sciimg.n; // This is to fix future references to naxes
     
-    int deg = (d + 1) * (d + 2) / 2; // number of degree elements //
-    int Q = pow(2 * w + 1, 2) * deg; // size of convolution matrix//
-    double *C = (double*) calloc(sizeof(double), Q * Q);
-    double *D = (double*) calloc(sizeof(double), Q);
-    
-    // Now we need to make stamps around each star to find the parameters for the kernel //
-    make_matrix_system(refimg, sciimg, w, fwhm, d, nstars, xc, yc, C, D);
-    double *a = (double*) malloc(sizeof(double) * Q);
-    // This will solve the system Cx = D and store x in a
-    solve_system(Q, C, D, a);
-    free(D);
-    free(C);
-    double *Con = (double*) calloc(sizeof(double), N);
-    var_convolve(w, d, Q, a, naxes, Ref, Con);
+    //Here do subtraction
+    double *Diff = (double*) malloc(sizeof(double) * sciimg.n * sciimg.m);
+    perform_subtraction(refimg, sciimg, w, fwhm, d, nstars, xc, yc, Diff);
     free(Ref);
-    
-    // Perform the subtraction //
-    double *Diff = (double*) malloc(sizeof(double)*N);
-    for (int i = 0; i < N; i++){
-        Diff[i] = Sci[i] - Con[i];
-    }
-    free(Sci); free(Con);
+    free(Sci);
     
     image diffimg = {Diff, naxes, naxes};
     int success = fits_write_to(outputfile, diffimg, scifile);
