@@ -55,7 +55,7 @@ void make_matrix_system(image ref, image sci, int w, int fwhm, int d, int nstars
     int qrs = 0; //initialize the qrs step//
     for (int q = 0; q < nk; q++) {
         //make the q kernel//
-        memset(Kq, 0, nk);
+        memset(Kq, 0, nk * sizeof(*Kq));
         Kq[q] = 1.0;
         if (q != cent) Kq[cent] = -1.0;
         
@@ -63,7 +63,7 @@ void make_matrix_system(image ref, image sci, int w, int fwhm, int d, int nstars
             for (int s = 0; s <= d - r; s++){
                 for (int n = 0; n < nk; n++){
                     //make the n kernel//
-                    memset(Kn, 0, nk);
+                    memset(Kn, 0, nk * sizeof(*Kn));
                     Kn[n] = 1.0;
                     if (n != cent) Kn[cent] = -1.0;
                     int ml = 0; //initialize the ml step//
@@ -81,8 +81,8 @@ void make_matrix_system(image ref, image sci, int w, int fwhm, int d, int nstars
                                     }
                                 }
                                 //reinitialize the convolution matrix//
-                                memset(CRKn, 0, S);
-                                memset(CRKq, 0, S);
+                                memset(CRKn, 0, S * sizeof(*CRKn));
+                                memset(CRKq, 0, S * sizeof(*CRKq));
                                 //now we do the convolution for n and q//
                                 for (int i=0; i<stax;i++){
                                     for(int j=0;j<stax;j++){
