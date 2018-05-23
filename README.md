@@ -1,4 +1,6 @@
 # DIA
+[![Build Status](https://travis-ci.org/toros-astro/DIA.svg?branch=master)](https://travis-ci.org/toros-astro/DIA)
+
 Delta Function Difference Imaging Code from Oelkers & Stassun 2018, submitted to ApJ Letters
 
 Hello! Thank you for showing interest in using the difference imaging code I have written based off of Alard & Lupton 1998 and Miller et al. 2008. I hope that it is relatively simple to use, and I encourage you to modify any of the scripts to form the basis of your own codes. I only ask you please cite Alard & Lupton 1998, Alard 2000 and Miller+2008, Oelkers+2015, and Oelkers & Stassun 2018,  given their large contributions to his work.
