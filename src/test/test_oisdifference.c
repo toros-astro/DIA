@@ -52,13 +52,18 @@ int main(void) {
     
     double norm = 0;
     for (int i = 0; i < h * w; i++) norm += subt[i] * subt[i];
+    norm = sqrt(norm);
     
-    printf("Norm: %f\n", norm);
+    double refnorm = 0;
+    for (int i = 0; i < h * w; i++) refnorm += ref[i] * ref[i];
+    refnorm = sqrt(refnorm);
     
     free(ref);
     free(sci);
     free(subt);
     
+    double perc_error = norm / refnorm;
+    if (perc_error > 0.1) return EXIT_FAILURE;
     return EXIT_SUCCESS;
 }
 
