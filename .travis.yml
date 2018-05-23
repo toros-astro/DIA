@@ -1,0 +1,13 @@
+os: linux
+
+language: c
+
+compiler:
+  - clang
+  - gcc
+
+install:
+  - sudo apt-get install libcfitsio3 libcfitsio3-dev -y
+
+script:
+  - make; make test
