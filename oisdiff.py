@@ -1,6 +1,4 @@
 import oismodule
-import numpy as np
-
 
 __version__ = '1.0a0'
 

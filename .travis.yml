@@ -1,13 +1,17 @@
 os: linux
 
-language: c
+language:
+  - python
 
-compiler:
-  - clang
-  - gcc
+python:
+  - "2.7"
+  - "3.5"
 
 install:
   - sudo apt-get install libcfitsio3 libcfitsio3-dev -y
+  - pip install -r requirements.txt
+  - pip install -r test_requirements.txt
 
 script:
   - make; make test
+  - python setup.py test
