@@ -1,6 +1,6 @@
 import oismodule
 
-__version__ = '1.0a0'
+__version__ = '1.0a1'
 
 
 def oisdifference(sci_img, ref_img, xc, yc, k_side, poly_deg, stamp_side):

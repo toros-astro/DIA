@@ -17,7 +17,7 @@
 #include "fitshelper.h"
 #include "oisdifference.h"
 
-char version_number[] = "1.0.2";
+char version_number[] = "1.0.3";
 
 void usage(char* exec_name);
 void version(char* exec_name);
