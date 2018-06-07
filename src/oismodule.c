@@ -58,11 +58,8 @@ oismodule_subtract(PyObject *self, PyObject *args)
     int* xc = (int *)PyArray_DATA(np_xc);
     int* yc = (int *)PyArray_DATA(np_yc);
 
-    image img = {sciimage, n, m};
-    image ref = {refimage, n, m};
-
     double *subt = (double *)malloc(n * m * sizeof(*subt));
-    perform_subtraction(ref, img, kernel_side / 2, stamp_side / 2, poly_deg, nstars, xc, yc, subt);
+    perform_subtraction(n, m, refimage, sciimage, kernel_side / 2, stamp_side / 2, poly_deg, nstars, xc, yc, subt);
 
     Py_DECREF(np_sciimage);
     Py_DECREF(np_refimage);

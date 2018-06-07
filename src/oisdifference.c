@@ -1,7 +1,7 @@
 #include "oisdifference.h"
 
 
-int perform_subtraction(image ref, image sci, int w, int fwhm,\
+int perform_subtraction(int nrows, int ncols, double* ref, double* sci, int w, int fwhm,\
                          int d, int nstars, int* xc, int* yc, double* subtraction) {
     int deg = (d + 1) * (d + 2) / 2; // number of degree elements //
     int Q = pow(2 * w + 1, 2) * deg; // size of convolution matrix//
@@ -9,32 +9,30 @@ int perform_subtraction(image ref, image sci, int w, int fwhm,\
     double *D = (double*) calloc(sizeof(double), Q);
 
     // Now we need to make stamps around each star to find the parameters for the kernel //
-    make_matrix_system(ref, sci, w, fwhm, d, nstars, xc, yc, C, D);
+    make_matrix_system(nrows, ncols, ref, sci, w, fwhm, d, nstars, xc, yc, C, D);
     double *a = (double*) malloc(sizeof(double) * Q);
     // This will solve the system Cx = D and store x in a
     solve_system(Q, C, D, a);
     free(D);
     free(C);
-    double *Con = (double*) calloc(sizeof(double), sci.n * sci.m);
-    double *Ref = ref.data;
-    double *Sci = sci.data;
-    var_convolve(w, d, Q, a, sci.n, Ref, Con);
+    int nelems = nrows * ncols;
+    double *conv = (double*) calloc(sizeof(double), nelems);
+
+    var_convolve(w, d, Q, a, nrows, ref, conv);
 
     // Perform the subtraction //
-    for (int i = 0; i < sci.n * sci.m; i++) {
-        subtraction[i] = Sci[i] - Con[i];
+    for (int i = 0; i < nelems; i++) {
+        subtraction[i] = sci[i] - conv[i];
     }
-    free(Con);
+    free(conv);
     return EXIT_SUCCESS;
 }
 
-void make_matrix_system(image ref, image sci, int w, int fwhm, int d, int nstars, int* xc, int* yc, double* C, double* D) {
+void make_matrix_system(int nrows, int ncols, double* ref, double* sci, \
+    int w, int fwhm, int d, int nstars, int* xc, int* yc, double* C, double* D) {
     
     // Now we need to make stamps around each star to find the parameters for the kernel //
     //parameters that fall out from above//
-    int naxes = ref.n;
-    double* Ref = ref.data;
-    double* Sci = sci.data;
     
     int L = 2 * w + 1;       // kernel axis //
     int nk = L * L;          // number of kernel elements //
@@ -76,8 +74,8 @@ void make_matrix_system(image ref, image sci, int w, int fwhm, int d, int nstars
                                 //make the star stamps//
                                 for (int i = 0; i < stax; i++){
                                     for(int j = 0; j < stax; j++){
-                                        Rs[i + j * stax] = Ref[(i + xcent - fwhm) + (j + ycent - fwhm) * naxes];
-                                        Ss[i + j * stax] = Sci[(i + xcent - fwhm) + (j + ycent - fwhm) * naxes];
+                                        Rs[i + j * stax] = ref[(i + xcent - fwhm) + (j + ycent - fwhm) * nrows];
+                                        Ss[i + j * stax] = sci[(i + xcent - fwhm) + (j + ycent - fwhm) * nrows];
                                     }
                                 }
                                 //reinitialize the convolution matrix//

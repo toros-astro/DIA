@@ -45,10 +45,8 @@ int main(void) {
         fscanf(fp, "%d %d", xc + i, yc + i);
     }
     fclose(fp);
-    
-    image sci_img = {sci, h, w};
-    image ref_img = {ref, h, w};
-    perform_subtraction(ref_img, sci_img, kw, fwhm, d, nstars, xc, yc, subt);
+
+    perform_subtraction(h, w, ref, sci, kw, fwhm, d, nstars, xc, yc, subt);
     
     double norm = 0;
     for (int i = 0; i < h * w; i++) norm += subt[i] * subt[i];

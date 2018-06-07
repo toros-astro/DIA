@@ -160,7 +160,7 @@ int main (int argc, char* argv[])
     
     //Here do subtraction
     double *Diff = (double*) malloc(sizeof(double) * sciimg.n * sciimg.m);
-    perform_subtraction(refimg, sciimg, w, fwhm, d, nstars, xc, yc, Diff);
+    perform_subtraction(refimg.n, refimg.m, Ref, Sci, w, fwhm, d, nstars, xc, yc, Diff);
     free(Ref);
     free(Sci);
     

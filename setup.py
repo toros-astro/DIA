@@ -12,7 +12,7 @@ with open('oisdiff.py', 'r') as f:
 oisdiffmodule = Extension('oismodule', 
                     sources=[os.path.join('src', f) for f in ('oismodule.c', 'oisdifference.c')],
                     extra_compile_args=["-std=c99"],
-                    libraries = ['m', 'cfitsio'],
+                    libraries = ['m',],
 )
 
 setup(name='oisdiff',
