@@ -58,8 +58,30 @@ oismodule_subtract(PyObject *self, PyObject *args)
     int* xc = (int *)PyArray_DATA(np_xc);
     int* yc = (int *)PyArray_DATA(np_yc);
 
+
+    int poly_dof = (poly_deg + 1) * (poly_deg + 2) / 2; // number of degree elements //
+    int M_dim = pow(kernel_side, 2) * poly_dof; // size of convolution matrix//
+    double *M_matrix = (double*) calloc(sizeof(double), M_dim * M_dim);
+    double *b_vector = (double*) calloc(sizeof(double), M_dim);
+
+    // Now we need to make stamps around each star to find the parameters for the kernel //
+    make_matrix_system(n, m, refimage, sciimage, kernel_side / 2, stamp_side / 2,\
+        poly_deg, nstars, xc, yc, M_matrix, b_vector);
+    double *sol_vector = (double*) malloc(sizeof(double) * M_dim);
+    // This will solve the system Mx = b and store x in sol
+    solve_system(M_dim, M_matrix, b_vector, sol_vector);
+    free(b_vector);
+    free(M_matrix);
+    int nelems = n * m;
+    double *conv = (double*) calloc(sizeof(double), nelems);
+
+    var_convolve(kernel_side / 2, poly_deg, M_dim, sol_vector, n, refimage, conv);
+
     double *subt = (double *)malloc(n * m * sizeof(*subt));
-    perform_subtraction(n, m, refimage, sciimage, kernel_side / 2, stamp_side / 2, poly_deg, nstars, xc, yc, subt);
+    // Perform the subtraction //
+    for (int i = 0; i < nelems; i++) {
+        subt[i] = sciimage[i] - conv[i];
+    }
 
     Py_DECREF(np_sciimage);
     Py_DECREF(np_refimage);
@@ -70,7 +92,15 @@ oismodule_subtract(PyObject *self, PyObject *args)
     PyArrayObject* py_subt_img = (PyArrayObject *)PyArray_SimpleNewFromData(2, diff_dims, NPY_DOUBLE, subt);
     PyArray_ENABLEFLAGS(py_subt_img, NPY_ARRAY_OWNDATA);
 
-    return Py_BuildValue("N", py_subt_img);
+    npy_intp opt_dims[2] = {n, m};
+    PyArrayObject* py_opt_img = (PyArrayObject *)PyArray_SimpleNewFromData(2, opt_dims, NPY_DOUBLE, conv);
+    PyArray_ENABLEFLAGS(py_opt_img, NPY_ARRAY_OWNDATA);
+
+    npy_intp krn_dims[3] = {kernel_side, kernel_side, poly_dof};
+    PyArrayObject* py_krn = (PyArrayObject *)PyArray_SimpleNewFromData(2, krn_dims, NPY_DOUBLE, sol_vector);
+    PyArray_ENABLEFLAGS(py_krn, NPY_ARRAY_OWNDATA);    
+
+    return Py_BuildValue("NNN", py_subt_img, py_opt_img, py_krn);
 }
 
 static PyMethodDef OISModuleMethods[] = {

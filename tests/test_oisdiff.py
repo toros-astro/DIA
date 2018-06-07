@@ -26,7 +26,7 @@ class TestSubtraction(unittest.TestCase):
         k_side = 7
         poly_deg = 0
         stamp_side = 23
-        subt = oisdiff.oisdifference(
+        subt, conv, krn = oisdiff.oisdifference(
             self.img, self.ref, self.pos_x, self.pos_y, k_side, poly_deg,
             stamp_side,
             )
